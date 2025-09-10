@@ -27,7 +27,8 @@ Route::prefix('users')->group(function () {
     // Obtener usuarios
     Route::get('/', [UserController::class, 'getAllUsers']);
 
-    Route::get('/{id}', [UserController::class, 'getUser']);
+
+     Route::get('/{id}', [UserController::class, 'getUser']);
 });
 
 // Ruta de prueba
