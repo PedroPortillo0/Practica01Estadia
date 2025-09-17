@@ -26,9 +26,10 @@ Route::prefix('users')->group(function () {
     
     // Obtener usuarios
     Route::get('/', [UserController::class, 'getAllUsers']);
-
-
-     Route::get('/{id}', [UserController::class, 'getUser']);
+    Route::get('/{id}', [UserController::class, 'getUser']);
+    
+    // Eliminar usuario
+    Route::delete('/{id}', [UserController::class, 'deleteUser']);
 });
 
 // Ruta de prueba

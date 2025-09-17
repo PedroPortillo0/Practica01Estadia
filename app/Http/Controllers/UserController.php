@@ -10,6 +10,7 @@ use App\Application\UseCases\RequestPasswordReset;
 use App\Application\UseCases\ResetPassword;
 use App\Application\UseCases\GetUserById;
 use App\Application\UseCases\GetAllUsers;
+use App\Application\UseCases\DeleteUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -24,7 +25,8 @@ class UserController extends Controller
         private RequestPasswordReset $requestPasswordReset,
         private ResetPassword $resetPassword,
         private GetUserById $getUserById,
-        private GetAllUsers $getAllUsers
+        private GetAllUsers $getAllUsers,
+        private DeleteUser $deleteUser
     ) {}
 
     public function register(Request $request): JsonResponse
@@ -206,5 +208,12 @@ class UserController extends Controller
         $result = $this->getAllUsers->execute($page, $limit);
         
         return response()->json($result, $result['success'] ? 200 : 400);
+    }
+
+    public function deleteUser(string $id): JsonResponse
+    {
+        $result = $this->deleteUser->execute($id);
+        
+        return response()->json($result, $result['success'] ? 200 : 404);
     }
 }
