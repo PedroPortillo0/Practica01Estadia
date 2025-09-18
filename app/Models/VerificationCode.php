@@ -20,6 +20,27 @@ class VerificationCode extends Model
         'expires_at' => 'datetime'
     ];
 
+    // Propiedad temporal para almacenar el código plano
+    public $plain_code = null;
+
+    // Mutator: Codifica automáticamente en Base64 antes de guardar
+    public function setCodeAttribute($value)
+    {
+        $this->attributes['code'] = base64_encode($value);
+    }
+
+    // Accessor: Decodifica automáticamente desde Base64 al leer
+    public function getCodeAttribute($value)
+    {
+        return base64_decode($value);
+    }
+
+    // Método para obtener el código plano (para emails)
+    public function getPlainCode(): string
+    {
+        return $this->plain_code ?? $this->code;
+    }
+
     // Generar código de 6 dígitos
     public static function generateCode(): string
     {
@@ -35,13 +56,21 @@ class VerificationCode extends Model
             ->where('used', false)
             ->update(['used' => true]);
 
-        // Crear nuevo código
-        return self::create([
+        // Generar código plano
+        $plainCode = self::generateCode();
+
+        // Crear nuevo código (se codifica automáticamente)
+        $verificationCode = self::create([
             'user_id' => $userId,
-            'code' => self::generateCode(),
+            'code' => $plainCode, // Se codificará automáticamente
             'type' => $type,
             'expires_at' => Carbon::now()->addMinutes(15) // Expira en 15 minutos
         ]);
+
+        // Asignar el código plano para enviarlo por email
+        $verificationCode->plain_code = $plainCode;
+        
+        return $verificationCode;
     }
 
     // Verificar si el código es válido
@@ -59,8 +88,11 @@ class VerificationCode extends Model
     // Buscar código válido
     public static function findValidCode(string $userId, string $code, string $type = 'email_verification'): ?self
     {
+        // Codificar el código recibido para comparar con la BD
+        $encodedCode = base64_encode($code);
+        
         return self::where('user_id', $userId)
-                   ->where('code', $code)
+                   ->whereRaw('code = ?', [$encodedCode]) // Comparación directa con código codificado
                    ->where('type', $type)
                    ->where('used', false)
                    ->where('expires_at', '>', Carbon::now())

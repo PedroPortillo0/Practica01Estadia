@@ -58,8 +58,8 @@ class RegisterUser
             // Generar código de verificación de 6 dígitos
             $verificationCode = \App\Models\VerificationCode::createForUser($savedUser->getId());
 
-            // Enviar email de verificación
-            $this->emailService->sendVerificationEmail($savedUser->getEmail(), $verificationCode->code);
+            // Enviar email de verificación (usando código plano)
+            $this->emailService->sendVerificationEmail($savedUser->getEmail(), $verificationCode->getPlainCode());
 
             return [
                 'success' => true,

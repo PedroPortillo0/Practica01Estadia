@@ -40,8 +40,8 @@ class RequestPasswordReset
             // Generar código de verificación para reset de contraseña
             $verificationCode = VerificationCode::createForUser($user->getId(), 'password_reset');
 
-            // Enviar email con código
-            $this->emailService->sendPasswordResetEmail($user->getEmail(), $verificationCode->code);
+            // Enviar email con código (usando código plano)
+            $this->emailService->sendPasswordResetEmail($user->getEmail(), $verificationCode->getPlainCode());
 
             return [
                 'success' => true,
