@@ -4,9 +4,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 
+// ========================================
+// RUTAS PÚBLICAS (Sin autenticación)
+// ========================================
 
+// Ruta de prueba
+Route::get('/test', function () {
+    return response()->json([
+        'message' => 'API funcionando correctamente',
+        'timestamp' => now()
+    ]);
+});
 
-// Rutas de usuarios
+// Rutas públicas de usuarios
 Route::prefix('users')->group(function () {
     // Registro de usuario
     Route::post('/register', [UserController::class, 'register']);
@@ -20,23 +30,25 @@ Route::prefix('users')->group(function () {
     // Verificación de email con código de 6 dígitos
     Route::post('/verifyemailcode', [UserController::class, 'verifyEmailWithCode']);
     
-    // Cambio de contraseña
+    // Reset de contraseña (sin autenticación)
     Route::post('/request-password-reset', [UserController::class, 'requestPasswordReset']);
     Route::patch('/reset-password', [UserController::class, 'resetPassword']);
+});
+
+// ========================================
+// RUTAS PROTEGIDAS (Requieren JWT)
+// ========================================
+
+// Rutas protegidas de usuarios
+Route::prefix('users')->middleware('jwt.auth')->group(function () {
+    // Información del usuario autenticado
+    Route::get('/me', [UserController::class, 'me']);
     
-    // Obtener usuarios
+    // Obtener usuarios (requiere autenticación)
     Route::get('/', [UserController::class, 'getAllUsers']);
     Route::get('/{id}', [UserController::class, 'getUser']);
     
-    // Eliminar usuario
+    // Eliminar usuario (requiere autenticación)
     Route::delete('/{id}', [UserController::class, 'deleteUser']);
-});
-
-// Ruta de prueba
-Route::get('/test', function () {
-    return response()->json([
-        'message' => 'API funcionando correctamente',
-        'timestamp' => now()
-    ]);
 });
 

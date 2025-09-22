@@ -27,9 +27,25 @@ class UserController extends Controller
         private GetUserById $getUserById,
         private GetAllUsers $getAllUsers,
         private DeleteUser $deleteUser
-    ) {}
+        ) {}
 
-    public function register(Request $request): JsonResponse
+        /**
+         * Obtener usuario autenticado desde el middleware
+         */
+        private function getAuthenticatedUser(Request $request)
+        {
+            return $request->attributes->get('authenticated_user');
+        }
+
+        /**
+         * Obtener payload del token desde el middleware
+         */
+        private function getTokenPayload(Request $request): ?array
+        {
+            return $request->attributes->get('token_payload');
+        }
+
+        public function register(Request $request): JsonResponse
     {
         // Validación de entrada
         $validator = Validator::make($request->all(), [
@@ -210,10 +226,32 @@ class UserController extends Controller
         return response()->json($result, $result['success'] ? 200 : 400);
     }
 
-    public function deleteUser(string $id): JsonResponse
-    {
-        $result = $this->deleteUser->execute($id);
-        
-        return response()->json($result, $result['success'] ? 200 : 404);
-    }
+        public function deleteUser(string $id): JsonResponse
+        {
+            $result = $this->deleteUser->execute($id);
+            
+            return response()->json($result, $result['success'] ? 200 : 404);
+        }
+
+        /**
+         * Obtener información del usuario autenticado
+         */
+        public function me(Request $request): JsonResponse
+        {
+            $user = $this->getAuthenticatedUser($request);
+            $payload = $this->getTokenPayload($request);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario autenticado obtenido exitosamente',
+                'data' => [
+                    'user' => $user->toArray(),
+                    'token_info' => [
+                        'user_id' => $payload['user_id'] ?? null,
+                        'expires_at' => $payload['exp'] ?? null,
+                        'issued_at' => $payload['iat'] ?? null
+                    ]
+                ]
+            ], 200);
+        }
 }
