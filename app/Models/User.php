@@ -22,12 +22,13 @@ class User extends Model
     protected $fillable = [
         'id',
         'nombre',
-        'apellido_paterno',
-        'apellido_materno',
-        'telefono',
+        'apellidos',
         'email',
         'password',
         'email_verificado',
+        'google_id',
+        'avatar',
+        'auth_provider',
     ];
 
     /**

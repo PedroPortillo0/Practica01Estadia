@@ -44,9 +44,7 @@ class RegisterUser
             $user = new User(
                 Str::uuid()->toString(),
                 trim($userData['nombre']),
-                trim($userData['apellidoPaterno']),
-                trim($userData['apellidoMaterno']),
-                $userData['telefono'],
+                trim($userData['apellidos']),
                 $email->getValue(),
                 $hashedPassword,
                 false // email no verificado inicialmente

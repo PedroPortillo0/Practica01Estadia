@@ -9,13 +9,14 @@ class User
     public function __construct(
         private string $id,
         private string $nombre,
-        private string $apellidoPaterno,
-        private string $apellidoMaterno,
-        private string $telefono,
+        private string $apellidos,
         private string $email,
-        private string $password,
+        private ?string $password,
         private bool $emailVerificado = false,
-        private ?DateTime $fechaCreacion = null
+        private ?DateTime $fechaCreacion = null,
+        private ?string $googleId = null,
+        private ?string $avatar = null,
+        private string $authProvider = 'local'
     ) {
         $this->fechaCreacion = $fechaCreacion ?? new DateTime();
     }
@@ -31,19 +32,9 @@ class User
         return $this->nombre;
     }
 
-    public function getApellidoPaterno(): string
+    public function getApellidos(): string
     {
-        return $this->apellidoPaterno;
-    }
-
-    public function getApellidoMaterno(): string
-    {
-        return $this->apellidoMaterno;
-    }
-
-    public function getTelefono(): string
-    {
-        return $this->telefono;
+        return $this->apellidos;
     }
 
     public function getEmail(): string
@@ -51,7 +42,7 @@ class User
         return $this->email;
     }
 
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }
@@ -66,10 +57,25 @@ class User
         return $this->fechaCreacion;
     }
 
+    public function getGoogleId(): ?string
+    {
+        return $this->googleId;
+    }
+
+    public function getAvatar(): ?string
+    {
+        return $this->avatar;
+    }
+
+    public function getAuthProvider(): string
+    {
+        return $this->authProvider;
+    }
+
     // Métodos de negocio
     public function getNombreCompleto(): string
     {
-        return "{$this->nombre} {$this->apellidoPaterno} {$this->apellidoMaterno}";
+        return "{$this->nombre} {$this->apellidos}";
     }
 
     public function verificarEmail(): void
@@ -86,24 +92,24 @@ class User
             $errores[] = 'El nombre debe tener al menos 2 caracteres';
         }
 
-        if (empty($userData['apellidoPaterno']) || strlen(trim($userData['apellidoPaterno'])) < 2) {
-            $errores[] = 'El apellido paterno debe tener al menos 2 caracteres';
-        }
-
-        if (empty($userData['apellidoMaterno']) || strlen(trim($userData['apellidoMaterno'])) < 2) {
-            $errores[] = 'El apellido materno debe tener al menos 2 caracteres';
-        }
-
-        if (empty($userData['telefono']) || !preg_match('/^\d{10}$/', $userData['telefono'])) {
-            $errores[] = 'El teléfono debe tener exactamente 10 dígitos';
+        if (empty($userData['apellidos']) || strlen(trim($userData['apellidos'])) < 2) {
+            $errores[] = 'Los apellidos deben tener al menos 2 caracteres';
         }
 
         if (empty($userData['email']) || !filter_var($userData['email'], FILTER_VALIDATE_EMAIL)) {
             $errores[] = 'El email debe tener un formato válido';
         }
 
-        if (empty($userData['password']) || strlen($userData['password']) < 6) {
-            $errores[] = 'La contraseña debe tener al menos 6 caracteres';
+        // Solo validar password si no es un registro con OAuth
+        $authProvider = $userData['auth_provider'] ?? 'local';
+        if ($authProvider === 'local') {
+            if (empty($userData['password']) || strlen($userData['password']) < 6) {
+                $errores[] = 'La contraseña debe tener al menos 6 caracteres';
+            }
+
+            if (empty($userData['confirm_password']) || $userData['password'] !== $userData['confirm_password']) {
+                $errores[] = 'Las contraseñas no coinciden';
+            }
         }
 
         return $errores;
@@ -115,11 +121,12 @@ class User
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
-            'apellidoPaterno' => $this->apellidoPaterno,
-            'apellidoMaterno' => $this->apellidoMaterno,
-            'telefono' => $this->telefono,
+            'apellidos' => $this->apellidos,
             'email' => $this->email,
             'emailVerificado' => $this->emailVerificado,
+            'googleId' => $this->googleId,
+            'avatar' => $this->avatar,
+            'authProvider' => $this->authProvider,
             'fechaCreacion' => $this->fechaCreacion->format('Y-m-d H:i:s')
         ];
     }

@@ -50,24 +50,22 @@ class UserController extends Controller
         // Validación de entrada
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|min:2|max:255',
-            'apellidoPaterno' => 'required|string|min:2|max:255',
-            'apellidoMaterno' => 'required|string|min:2|max:255',
-            'telefono' => 'required|string|regex:/^\d{10}$/',
+            'apellidos' => 'required|string|min:2|max:255',
             'email' => 'required|email|max:255',
-            'password' => 'required|string|min:6'
+            'password' => 'required|string|min:6',
+            'confirm_password' => 'required|string|min:6|same:password'
         ], [
             'nombre.required' => 'El nombre es requerido',
             'nombre.min' => 'El nombre debe tener al menos 2 caracteres',
-            'apellidoPaterno.required' => 'El apellido paterno es requerido',
-            'apellidoPaterno.min' => 'El apellido paterno debe tener al menos 2 caracteres',
-            'apellidoMaterno.required' => 'El apellido materno es requerido',
-            'apellidoMaterno.min' => 'El apellido materno debe tener al menos 2 caracteres',
-            'telefono.required' => 'El teléfono es requerido',
-            'telefono.regex' => 'El teléfono debe tener exactamente 10 dígitos',
+            'apellidos.required' => 'Los apellidos son requeridos',
+            'apellidos.min' => 'Los apellidos deben tener al menos 2 caracteres',
             'email.required' => 'El email es requerido',
             'email.email' => 'El email debe tener un formato válido',
             'password.required' => 'La contraseña es requerida',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres'
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres',
+            'confirm_password.required' => 'La confirmación de contraseña es requerida',
+            'confirm_password.min' => 'La confirmación de contraseña debe tener al menos 6 caracteres',
+            'confirm_password.same' => 'Las contraseñas no coinciden'
         ]);
 
         if ($validator->fails()) {

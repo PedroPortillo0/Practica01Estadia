@@ -72,3 +72,23 @@ VERIFICATION_EXPIRES_IN=86400
 
 # Frontend URL
 FRONTEND_URL=http://localhost:3000
+
+# ==================================
+# GOOGLE OAUTH CONFIGURATION
+# ==================================
+# Instrucciones:
+# 1. Ve a https://console.cloud.google.com/
+# 2. Crea un proyecto o selecciona uno existente
+# 3. Habilita "Google+ API" o "Google Identity"
+# 4. Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
+# 5. Tipo de aplicación: "Web application"
+# 6. Agrega esta URL en "Authorized redirect URIs":
+#    http://localhost:8000/api/auth/google/callback
+# 7. Copia tu Client ID y Client Secret aquí abajo:
+
+GOOGLE_CLIENT_ID=TU_GOOGLE_CLIENT_ID_AQUI.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=TU_GOOGLE_CLIENT_SECRET_AQUI
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
+
+# Para producción, cambia la URL a tu dominio:
+# GOOGLE_REDIRECT_URI=https://tudominio.com/api/auth/google/callback

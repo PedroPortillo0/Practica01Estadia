@@ -2,6 +2,38 @@
 
 ## [Unreleased](https://github.com/laravel/laravel/compare/v12.3.1...12.x)
 
+### [2025-10-15] - Autenticación con Google OAuth
+
+**Agregado:**
+- Instalación de Laravel Socialite para OAuth
+- Migración para agregar campos OAuth a la tabla users:
+  - `google_id` - ID único del usuario en Google
+  - `avatar` - URL del avatar del usuario
+  - `auth_provider` - Proveedor de autenticación ('local' o 'google')
+  - Campo `password` ahora es nullable para usuarios OAuth
+- Nuevo caso de uso `LoginWithGoogle` siguiendo arquitectura hexagonal
+- Nuevo controlador `GoogleAuthController` con tres endpoints:
+  - `GET /api/auth/google/redirect` - Obtener URL de autenticación
+  - `GET /api/auth/google/callback` - Callback de Google
+  - `POST /api/auth/google/token` - Login con token de Google (móvil/SPA)
+- Método `findByGoogleId()` en `UserRepositoryInterface` y su implementación
+- Configuración de servicios de Google en `config/services.php`
+- Documentación completa en `GOOGLE_AUTH_SETUP.md`
+- Archivo de ejemplo `.env.google.example` con variables de entorno
+
+**Modificado:**
+- Entidad `User` del dominio ahora soporta campos OAuth
+- Modelo Eloquent `User` actualizado con nuevos campos fillable
+- Repositorio `EloquentUserRepository` actualizado para manejar campos OAuth
+- Validación en entidad User para permitir registro sin contraseña con OAuth
+- Rutas API actualizadas con nuevas rutas de autenticación Google
+
+**Notas:**
+- Los usuarios pueden ahora registrarse/iniciar sesión con Google
+- Si un usuario existe con el mismo email, se vincula su cuenta de Google
+- Los emails de Google se marcan como verificados automáticamente
+- El sistema mantiene compatibilidad total con registro/login tradicional
+
 ## [v12.3.1](https://github.com/laravel/laravel/compare/v12.3.0...v12.3.1) - 2025-08-21
 
 * [12.x] Bump Pint version by [@AhmedAlaa4611](https://github.com/AhmedAlaa4611) in https://github.com/laravel/laravel/pull/6653

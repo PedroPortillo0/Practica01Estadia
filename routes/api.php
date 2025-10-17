@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\GoogleAuthController;
 
 // ========================================
 // RUTAS PÚBLICAS (Sin autenticación)
@@ -36,6 +38,21 @@ Route::prefix('users')->group(function () {
 });
 
 // ========================================
+// RUTAS DE AUTENTICACIÓN CON GOOGLE
+// ========================================
+
+Route::prefix('auth/google')->group(function () {
+    // Obtener URL de autenticación de Google
+    Route::get('/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
+    
+    // Callback de Google después de autenticación
+    Route::get('/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+    
+    // Login con token de Google (para apps móviles/SPA)
+    Route::post('/token', [GoogleAuthController::class, 'loginWithGoogleToken']);
+});
+
+// ========================================
 // RUTAS PROTEGIDAS (Requieren JWT)
 // ========================================
 
@@ -50,5 +67,24 @@ Route::prefix('users')->middleware('jwt.auth')->group(function () {
     
     // Eliminar usuario (requiere autenticación)
     Route::delete('/{id}', [UserController::class, 'deleteUser']);
+});
+
+// ========================================
+// RUTAS DE QUIZ
+// ========================================
+
+// Rutas públicas del quiz
+Route::prefix('quiz')->group(function () {
+    // Obtener opciones disponibles para el quiz
+    Route::get('/options', [QuizController::class, 'getOptions']);
+});
+
+// Rutas protegidas del quiz (requieren JWT)
+Route::prefix('quiz')->middleware('jwt.auth')->group(function () {
+    // Enviar respuestas del quiz
+    Route::post('/submit', [QuizController::class, 'submit']);
+    
+    // Obtener quiz del usuario
+    Route::get('/my-quiz', [QuizController::class, 'getUserQuizResponse']);
 });
 

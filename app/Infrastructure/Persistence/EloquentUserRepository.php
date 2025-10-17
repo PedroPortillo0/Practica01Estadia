@@ -16,12 +16,13 @@ class EloquentUserRepository implements UserRepositoryInterface
             $userModel = UserModel::create([
                 'id' => $user->getId(),
                 'nombre' => $user->getNombre(),
-                'apellido_paterno' => $user->getApellidoPaterno(),
-                'apellido_materno' => $user->getApellidoMaterno(),
-                'telefono' => $user->getTelefono(),
+                'apellidos' => $user->getApellidos(),
                 'email' => $user->getEmail(),
                 'password' => $user->getPassword(),
                 'email_verificado' => $user->isEmailVerificado(),
+                'google_id' => $user->getGoogleId(),
+                'avatar' => $user->getAvatar(),
+                'auth_provider' => $user->getAuthProvider(),
                 'created_at' => $user->getFechaCreacion()
             ]);
 
@@ -54,6 +55,17 @@ class EloquentUserRepository implements UserRepositoryInterface
 
         } catch (Exception $e) {
             throw new Exception('Error al buscar usuario por ID: ' . $e->getMessage());
+        }
+    }
+
+    public function findByGoogleId(string $googleId): ?User
+    {
+        try {
+            $userModel = UserModel::where('google_id', $googleId)->first();
+            return $userModel ? $this->toDomainEntity($userModel) : null;
+
+        } catch (Exception $e) {
+            throw new Exception('Error al buscar usuario por Google ID: ' . $e->getMessage());
         }
     }
 
@@ -99,13 +111,14 @@ class EloquentUserRepository implements UserRepositoryInterface
         return new User(
             $userModel->id,
             $userModel->nombre,
-            $userModel->apellido_paterno,
-            $userModel->apellido_materno,
-            $userModel->telefono,
+            $userModel->apellidos,
             $userModel->email,
             $userModel->password,
             $userModel->email_verificado,
-            new DateTime($userModel->created_at)
+            new DateTime($userModel->created_at),
+            $userModel->google_id,
+            $userModel->avatar,
+            $userModel->auth_provider ?? 'local'
         );
     }
 

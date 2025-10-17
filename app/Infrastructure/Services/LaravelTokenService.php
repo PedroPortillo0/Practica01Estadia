@@ -22,6 +22,11 @@ class LaravelTokenService implements TokenServiceInterface
         $this->verificationExpiresIn = config('app.verification_expires_in', 86400); // 24 horas
     }
 
+    public function generate(string $userId): string
+    {
+        return $this->generateToken(['user_id' => $userId]);
+    }
+
     public function generateToken(array $payload): string
     {
         try {
