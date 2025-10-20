@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\DailyQuoteController;
 
 // ========================================
 // RUTAS PÚBLICAS (Sin autenticación)
@@ -86,5 +87,20 @@ Route::prefix('quiz')->middleware('jwt.auth')->group(function () {
     
     // Obtener quiz del usuario
     Route::get('/my-quiz', [QuizController::class, 'getUserQuizResponse']);
+});
+
+// ========================================
+// RUTAS DE FRASES DIARIAS (Públicas)
+// ========================================
+
+Route::prefix('daily-quote')->group(function () {
+    // Obtener frase del día (simple para dashboard)
+    Route::get('/', [DailyQuoteController::class, 'getDailyQuote']);
+    
+    // Obtener detalle completo de la frase del día
+    Route::get('/detail', [DailyQuoteController::class, 'getDailyQuoteDetail']);
+    
+    // Obtener todas las frases (para testing/admin)
+    Route::get('/all', [DailyQuoteController::class, 'getAllQuotes']);
 });
 
