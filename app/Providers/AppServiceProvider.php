@@ -6,7 +6,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Domain\Ports\UserRepositoryInterface;
 use App\Domain\Ports\EmailServiceInterface;
 use App\Domain\Ports\TokenServiceInterface;
+use App\Domain\Ports\DailyQuoteRepositoryInterface;
 use App\Infrastructure\Persistence\EloquentUserRepository;
+use App\Infrastructure\Persistence\EloquentDailyQuoteRepository;
 use App\Infrastructure\Services\LaravelEmailService;
 use App\Infrastructure\Services\LaravelTokenService;
 
@@ -21,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
         $this->app->bind(EmailServiceInterface::class, LaravelEmailService::class);
         $this->app->bind(TokenServiceInterface::class, LaravelTokenService::class);
+        $this->app->bind(DailyQuoteRepositoryInterface::class, EloquentDailyQuoteRepository::class);
     }
 
     /**

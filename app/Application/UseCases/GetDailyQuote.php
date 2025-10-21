@@ -2,15 +2,16 @@
 
 namespace App\Application\UseCases;
 
+use App\Domain\Ports\DailyQuoteRepositoryInterface;
 use Exception;
 
 class GetDailyQuote
 {
-    private string $csvPath;
+    private DailyQuoteRepositoryInterface $repository;
 
-    public function __construct()
+    public function __construct(DailyQuoteRepositoryInterface $repository)
     {
-        $this->csvPath = storage_path('app/daily_quotes.csv');
+        $this->repository = $repository;
     }
 
     /**
@@ -22,42 +23,28 @@ class GetDailyQuote
     public function execute(bool $includeDetail = false): array
     {
         try {
-            // Verificar que el archivo existe
-            if (!file_exists($this->csvPath)) {
-                throw new Exception('Archivo de frases no encontrado');
-            }
-
-            // Leer todas las frases del CSV
-            $quotes = $this->readQuotesFromCSV();
-
-            if (empty($quotes)) {
-                throw new Exception('No hay frases disponibles');
-            }
-
-            // Calcular qué frase mostrar basado en el día del año
-            $dayOfYear = (int) date('z'); // 0-364 (0-365 en año bisiesto)
-            $totalQuotes = count($quotes);
+            // Calcular el día del año (1-366)
+            $dayOfYear = (int) date('z') + 1; // date('z') retorna 0-365, lo convertimos a 1-366
             
-            // Usar módulo para ciclar las frases
-            $quoteIndex = $dayOfYear % $totalQuotes;
-            
-            // Obtener la frase del día
-            $dailyQuote = $quotes[$quoteIndex];
+            // Buscar la frase específica para este día
+            $quoteEntity = $this->repository->findByDayOfYear($dayOfYear);
+
+            if (!$quoteEntity) {
+                throw new Exception('No hay frase disponible para el día de hoy');
+            }
 
             // Preparar respuesta según si se pide detalle o no
             if ($includeDetail) {
                 return [
                     'success' => true,
                     'data' => [
-                        'id' => $dailyQuote['id'],
-                        'quote' => $dailyQuote['quote'],
-                        'full_quote' => $dailyQuote['full_quote'],
-                        'author' => $dailyQuote['author'],
-                        'author_bio' => $dailyQuote['author_bio'],
-                        'context' => $dailyQuote['context'],
-                        'category' => $dailyQuote['category'],
+                        'id' => $quoteEntity->getId(),
+                        'quote' => $quoteEntity->getQuote(),
+                        'author' => $quoteEntity->getAuthor(),
+                        'category' => $quoteEntity->getCategory(),
                         'date' => date('Y-m-d'),
-                        'day_of_year' => $dayOfYear + 1
+                        'day_of_year' => $dayOfYear,
+                        'is_active' => $quoteEntity->isActive()
                     ]
                 ];
             }
@@ -66,10 +53,10 @@ class GetDailyQuote
             return [
                 'success' => true,
                 'data' => [
-                    'id' => $dailyQuote['id'],
-                    'quote' => $dailyQuote['quote'],
-                    'author' => $dailyQuote['author'],
-                    'category' => $dailyQuote['category'],
+                    'id' => $quoteEntity->getId(),
+                    'quote' => $quoteEntity->getQuote(),
+                    'author' => $quoteEntity->getAuthor(),
+                    'category' => $quoteEntity->getCategory(),
                     'date' => date('Y-m-d')
                 ]
             ];
@@ -83,37 +70,6 @@ class GetDailyQuote
     }
 
     /**
-     * Lee las frases del archivo CSV
-     * 
-     * @return array
-     */
-    private function readQuotesFromCSV(): array
-    {
-        $quotes = [];
-        
-        if (($handle = fopen($this->csvPath, 'r')) !== false) {
-            // Leer la primera línea (encabezados)
-            $headers = fgetcsv($handle);
-            
-            // Leer el resto de líneas
-            while (($data = fgetcsv($handle)) !== false) {
-                // Ignorar líneas vacías o con datos incompletos
-                if (empty($data) || count($data) !== count($headers) || empty($data[0])) {
-                    continue;
-                }
-                
-                // Crear array asociativo con los encabezados
-                $quote = array_combine($headers, $data);
-                $quotes[] = $quote;
-            }
-            
-            fclose($handle);
-        }
-        
-        return $quotes;
-    }
-
-    /**
      * Obtiene todas las frases (útil para testing o admin)
      * 
      * @return array
@@ -121,16 +77,16 @@ class GetDailyQuote
     public function getAllQuotes(): array
     {
         try {
-            if (!file_exists($this->csvPath)) {
-                throw new Exception('Archivo de frases no encontrado');
-            }
+            $quotes = $this->repository->findAllActive();
 
-            $quotes = $this->readQuotesFromCSV();
+            $quotesArray = array_map(function ($quote) {
+                return $quote->toArray();
+            }, $quotes);
 
             return [
                 'success' => true,
-                'data' => $quotes,
-                'total' => count($quotes)
+                'data' => $quotesArray,
+                'total' => count($quotesArray)
             ];
 
         } catch (Exception $e) {
