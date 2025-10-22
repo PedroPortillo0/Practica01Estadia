@@ -44,6 +44,26 @@ class EloquentDailyQuoteRepository implements DailyQuoteRepositoryInterface
         })->toArray();
     }
     
+    public function findAllPaginated(int $page, int $limit): array
+    {
+        $offset = ($page - 1) * $limit;
+        $total = DailyQuote::count();
+        
+        $quotes = DailyQuote::orderBy('day_of_year')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
+        
+        return [
+            'data' => $quotes->map(function ($quote) {
+                return $this->toDomainEntity($quote);
+            })->toArray(),
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ];
+    }
+    
     public function save(DailyQuoteEntity $quoteEntity): DailyQuoteEntity
     {
         $quote = DailyQuote::create([
