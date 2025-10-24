@@ -14,6 +14,8 @@ interface DailyQuoteRepositoryInterface
     
     public function findAllActive(): array;
     
+    public function findAllPaginated(int $page, int $limit): array;
+    
     public function save(DailyQuote $quote): DailyQuote;
     
     public function update(DailyQuote $quote): DailyQuote;

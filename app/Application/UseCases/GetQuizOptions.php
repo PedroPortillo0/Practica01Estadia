@@ -4,16 +4,12 @@ namespace App\Application\UseCases;
 
 use App\Domain\Enums\DatosPersonales\AgeRange;
 use App\Domain\Enums\DatosPersonales\Gender;
-use App\Domain\Enums\DatosPersonales\SexualOrientation;
-use App\Domain\Enums\DatosPersonales\MexicanState;
+use App\Domain\Enums\DatosPersonales\Country;
 use App\Domain\Enums\Espiritualidad\ReligiousBelief;
 use App\Domain\Enums\Espiritualidad\SpiritualPracticeLevel;
 use App\Domain\Enums\Espiritualidad\SpiritualPracticeFrequency;
-use App\Domain\Enums\ValoresEstoicos\StoicValue;
-use App\Domain\Enums\FilosofiaDeVida\LifePurpose;
-use App\Domain\Enums\FilosofiaDeVida\HappinessSource;
-use App\Domain\Enums\FilosofiaDeVida\AdversityResponse;
-use App\Domain\Enums\FilosofiaDeVida\LifeDevelopmentArea;
+use App\Domain\Enums\DesafiosDiarios\DailyChallenge;
+use App\Domain\Enums\CaminoEstoico\StoicPath;
 
 class GetQuizOptions
 {
@@ -32,15 +28,11 @@ class GetQuizOptions
                     'additional' => Gender::getAdditionalOptions()
                 ],
                 
-                'sexual_orientations' => [
-                    'main' => SexualOrientation::getMainOptions(),
-                    'additional' => SexualOrientation::getAdditionalOptions()
-                ],
                 
-                'mexican_states' => array_map(fn($case) => [
-                    'value' => $case->value,
-                    'label' => $case->getLabel()
-                ], MexicanState::cases()),
+                'countries' => [
+                    'main' => Country::getMainOptions(),
+                    'all' => Country::getAllOptions()
+                ],
                 
                 'religious_beliefs' => array_map(fn($case) => [
                     'value' => $case->value,
@@ -57,31 +49,21 @@ class GetQuizOptions
                     'label' => $case->getLabel()
                 ], SpiritualPracticeFrequency::cases()),
                 
-                'stoic_values' => array_map(fn($case) => [
+                'daily_challenges' => array_map(fn($case) => [
                     'value' => $case->value,
                     'label' => $case->getLabel(),
-                    'description' => $case->getDescription()
-                ], StoicValue::cases()),
+                    'description' => $case->getDescription(),
+                    'icon' => $case->getIcon(),
+                    'color' => $case->getColor()
+                ], DailyChallenge::cases()),
                 
-                'life_purposes' => array_map(fn($case) => [
+                'stoic_paths' => array_map(fn($case) => [
                     'value' => $case->value,
-                    'label' => $case->getLabel()
-                ], LifePurpose::cases()),
-                
-                'happiness_sources' => array_map(fn($case) => [
-                    'value' => $case->value,
-                    'label' => $case->getLabel()
-                ], HappinessSource::cases()),
-                
-                'adversity_responses' => array_map(fn($case) => [
-                    'value' => $case->value,
-                    'label' => $case->getLabel()
-                ], AdversityResponse::cases()),
-                
-                'life_development_areas' => array_map(fn($case) => [
-                    'value' => $case->value,
-                    'label' => $case->getLabel()
-                ], LifeDevelopmentArea::cases())
+                    'label' => $case->getLabel(),
+                    'description' => $case->getDescription(),
+                    'icon' => $case->getIcon(),
+                    'color' => $case->getColor()
+                ], StoicPath::cases())
             ]
         ];
     }
