@@ -11,21 +11,18 @@ class UserQuizResponse extends Model
         'user_id',
         'age_range',
         'gender',
-        'sexual_orientation',
-        'state',
+        'country',
         'religious_belief',
         'spiritual_practice_level',
         'spiritual_practice_frequency',
-        'stoic_values',
-        'life_purpose',
-        'happiness_source',
-        'adversity_response',
-        'life_development_area',
+        'daily_challenges',
+        'stoic_paths',
         'completed_at'
     ];
 
     protected $casts = [
-        'stoic_values' => 'array',
+        'daily_challenges' => 'array',
+        'stoic_paths' => 'array',
         'completed_at' => 'datetime'
     ];
 

@@ -11,7 +11,9 @@ enum ReligiousBelief: string
     case JUDIO = 'judio';
     case MUSULMAN = 'musulman';
     case BUDISTA = 'budista';
-    case AGNOSTICO_OTRO = 'agnostico_otro';
+    case AGNOSTICOS = 'agnosticos';
+    case ESPIRITUALES = 'espirituales';
+    case OTROS = 'otros';
 
     public function getLabel(): string
     {
@@ -23,7 +25,9 @@ enum ReligiousBelief: string
             self::JUDIO => 'Judío',
             self::MUSULMAN => 'Musulmán',
             self::BUDISTA => 'Budista',
-            self::AGNOSTICO_OTRO => 'Agnósticos / otro',
+            self::AGNOSTICOS => 'Agnósticos',
+            self::ESPIRITUALES => 'Espirituales',
+            self::OTROS => 'Otros',
         };
     }
 }
