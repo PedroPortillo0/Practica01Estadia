@@ -26,6 +26,7 @@ class User extends Model
         'email',
         'password',
         'email_verificado',
+        'quiz_completed',
         'google_id',
         'avatar',
         'auth_provider',
@@ -49,6 +50,7 @@ class User extends Model
     {
         return [
             'email_verificado' => 'boolean',
+            'quiz_completed' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

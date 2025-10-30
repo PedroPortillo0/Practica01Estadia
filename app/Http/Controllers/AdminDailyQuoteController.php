@@ -30,13 +30,22 @@ class AdminDailyQuoteController extends Controller
     /**
      * Muestra el panel de administración
      */
-    public function index()
+    public function index(Request $request)
     {
-        $result = $this->getAllDailyQuotes->execute(false);
+        $page = (int) $request->query('page', 1);
+        $limit = (int) $request->query('limit', 50);
+        
+        $result = $this->getAllDailyQuotes->execute($page, $limit);
+        
+        $total = $result['total'] ?? 0;
+        $lastPage = $limit > 0 ? (int) ceil($total / $limit) : 1;
         
         return view('admin.daily-quotes.index', [
             'quotes' => $result['data'] ?? [],
-            'total' => $result['total'] ?? 0
+            'total' => $total,
+            'currentPage' => $page,
+            'lastPage' => $lastPage,
+            'limit' => $limit
         ]);
     }
 

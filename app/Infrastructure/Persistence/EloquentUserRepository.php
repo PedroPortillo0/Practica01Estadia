@@ -13,18 +13,41 @@ class EloquentUserRepository implements UserRepositoryInterface
     public function save(User $user): User
     {
         try {
-            $userModel = UserModel::create([
-                'id' => $user->getId(),
-                'nombre' => $user->getNombre(),
-                'apellidos' => $user->getApellidos(),
-                'email' => $user->getEmail(),
-                'password' => $user->getPassword(),
-                'email_verificado' => $user->isEmailVerificado(),
-                'google_id' => $user->getGoogleId(),
-                'avatar' => $user->getAvatar(),
-                'auth_provider' => $user->getAuthProvider(),
-                'created_at' => $user->getFechaCreacion()
-            ]);
+            // Verificar si el usuario ya existe
+            $userModel = UserModel::find($user->getId());
+            
+            if ($userModel) {
+                // Actualizar usuario existente
+                $userModel->update([
+                    'nombre' => $user->getNombre(),
+                    'apellidos' => $user->getApellidos(),
+                    'email' => $user->getEmail(),
+                    'password' => $user->getPassword(),
+                    'email_verificado' => $user->isEmailVerificado(),
+                    'quiz_completed' => $user->isQuizCompleted(),
+                    'google_id' => $user->getGoogleId(),
+                    'avatar' => $user->getAvatar(),
+                    'auth_provider' => $user->getAuthProvider(),
+                ]);
+            } else {
+                // Crear nuevo usuario
+                $userModel = UserModel::create([
+                    'id' => $user->getId(),
+                    'nombre' => $user->getNombre(),
+                    'apellidos' => $user->getApellidos(),
+                    'email' => $user->getEmail(),
+                    'password' => $user->getPassword(),
+                    'email_verificado' => $user->isEmailVerificado(),
+                    'quiz_completed' => $user->isQuizCompleted(),
+                    'google_id' => $user->getGoogleId(),
+                    'avatar' => $user->getAvatar(),
+                    'auth_provider' => $user->getAuthProvider(),
+                    'created_at' => $user->getFechaCreacion()
+                ]);
+            }
+
+            // Recargar el modelo desde la base de datos para obtener todos los campos actualizados
+            $userModel->refresh();
 
             return $this->toDomainEntity($userModel);
 
@@ -115,6 +138,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             $userModel->email,
             $userModel->password,
             $userModel->email_verificado,
+            $userModel->quiz_completed ?? false,
             new DateTime($userModel->created_at),
             $userModel->google_id,
             $userModel->avatar,
