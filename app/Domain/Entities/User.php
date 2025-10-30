@@ -13,6 +13,7 @@ class User
         private string $email,
         private ?string $password,
         private bool $emailVerificado = false,
+        private bool $quizCompleted = false,
         private ?DateTime $fechaCreacion = null,
         private ?string $googleId = null,
         private ?string $avatar = null,
@@ -52,6 +53,11 @@ class User
         return $this->emailVerificado;
     }
 
+    public function isQuizCompleted(): bool
+    {
+        return $this->quizCompleted;
+    }
+
     public function getFechaCreacion(): DateTime
     {
         return $this->fechaCreacion;
@@ -81,6 +87,11 @@ class User
     public function verificarEmail(): void
     {
         $this->emailVerificado = true;
+    }
+
+    public function completarQuiz(): void
+    {
+        $this->quizCompleted = true;
     }
 
     // Validaciones de dominio
@@ -124,6 +135,7 @@ class User
             'apellidos' => $this->apellidos,
             'email' => $this->email,
             'emailVerificado' => $this->emailVerificado,
+            'quizCompleted' => $this->quizCompleted,
             'googleId' => $this->googleId,
             'avatar' => $this->avatar,
             'authProvider' => $this->authProvider,

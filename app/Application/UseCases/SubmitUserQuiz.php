@@ -3,11 +3,16 @@
 namespace App\Application\UseCases;
 
 use App\Models\UserQuizResponse;
+use App\Domain\Ports\UserRepositoryInterface;
 use Illuminate\Support\Str;
 use Exception;
 
 class SubmitUserQuiz
 {
+    public function __construct(
+        private UserRepositoryInterface $userRepository
+    ) {}
+
     public function execute(string $userId, array $quizData): array
     {
         try {
@@ -34,6 +39,13 @@ class SubmitUserQuiz
                 'stoic_paths' => $quizData['stoic_paths'],
                 'completed_at' => now()
             ]);
+
+            // Marcar al usuario como completado en el quiz
+            $user = $this->userRepository->findById($userId);
+            if ($user) {
+                $user->completarQuiz();
+                $this->userRepository->save($user);
+            }
 
             return [
                 'success' => true,
