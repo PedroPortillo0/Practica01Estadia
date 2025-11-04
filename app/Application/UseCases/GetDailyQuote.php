@@ -16,7 +16,7 @@ class GetDailyQuote
 
     /**
      * Obtiene la frase del día basada en el día del año
-     * 
+     *
      * @param bool $includeDetail Si debe incluir información completa
      * @return array
      */
@@ -25,8 +25,8 @@ class GetDailyQuote
         try {
             // Calcular el día del año (1-366)
             $dayOfYear = (int) date('z') + 1; // date('z') retorna 0-365, lo convertimos a 1-366
-            
-            // Buscar la frase específica para este día
+
+            // Buscar la frase para este día
             $quoteEntity = $this->repository->findByDayOfYear($dayOfYear);
 
             if (!$quoteEntity) {

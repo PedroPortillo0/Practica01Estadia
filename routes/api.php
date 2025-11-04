@@ -6,6 +6,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\DailyQuoteController;
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\DiarioController;
 
 // ========================================
 // RUTAS PÚBLICAS (Sin autenticación)
@@ -105,4 +107,18 @@ Route::prefix('daily-quote')->group(function () {
     // Obtener todas las frases (para testing/admin)
     Route::get('/all', [DailyQuoteController::class, 'getAllQuotes']);
 });
+
+
+// ========================================
+// RUTAS DE DIARIO (Reflexiones)
+// ========================================
+// Guardar reflexiones matutina/vespertina. Requiere autenticación JWT.
+Route::prefix('diario')->middleware('jwt.auth')->group(function () {
+    // Obtener reflexiones del día (opcional ?date=YYYY-MM-DD)
+    Route::get('/', [DiarioController::class, 'show']);
+    // Guardar o actualizar las reflexiones para una fecha dada
+    Route::post('/', [DiarioController::class, 'store']);
+});
+
+
 
