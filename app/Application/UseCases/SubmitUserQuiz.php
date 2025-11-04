@@ -3,11 +3,16 @@
 namespace App\Application\UseCases;
 
 use App\Models\UserQuizResponse;
+use App\Domain\Ports\UserRepositoryInterface;
 use Illuminate\Support\Str;
 use Exception;
 
 class SubmitUserQuiz
 {
+    public function __construct(
+        private UserRepositoryInterface $userRepository
+    ) {}
+
     public function execute(string $userId, array $quizData): array
     {
         try {
@@ -26,18 +31,21 @@ class SubmitUserQuiz
                 'user_id' => $userId,
                 'age_range' => $quizData['age_range'],
                 'gender' => $quizData['gender'],
-                'sexual_orientation' => $quizData['sexual_orientation'],
-                'state' => $quizData['state'] ?? null,
+                'country' => $quizData['country'] ?? null,
                 'religious_belief' => $quizData['religious_belief'],
                 'spiritual_practice_level' => $quizData['spiritual_practice_level'],
                 'spiritual_practice_frequency' => $quizData['spiritual_practice_frequency'],
-                'stoic_values' => $quizData['stoic_values'],
-                'life_purpose' => $quizData['life_purpose'],
-                'happiness_source' => $quizData['happiness_source'],
-                'adversity_response' => $quizData['adversity_response'],
-                'life_development_area' => $quizData['life_development_area'],
+                'daily_challenges' => $quizData['daily_challenges'],
+                'stoic_paths' => $quizData['stoic_paths'],
                 'completed_at' => now()
             ]);
+
+            // Marcar al usuario como completado en el quiz
+            $user = $this->userRepository->findById($userId);
+            if ($user) {
+                $user->completarQuiz();
+                $this->userRepository->save($user);
+            }
 
             return [
                 'success' => true,
@@ -58,15 +66,11 @@ class SubmitUserQuiz
         $requiredFields = [
             'age_range',
             'gender',
-            'sexual_orientation',
             'religious_belief',
             'spiritual_practice_level',
             'spiritual_practice_frequency',
-            'stoic_values',
-            'life_purpose',
-            'happiness_source',
-            'adversity_response',
-            'life_development_area'
+            'daily_challenges',
+            'stoic_paths'
         ];
 
         foreach ($requiredFields as $field) {
@@ -75,9 +79,14 @@ class SubmitUserQuiz
             }
         }
 
-        // Validar que stoic_values sea un array y tenga al menos 2 elementos
-        if (!is_array($data['stoic_values']) || count($data['stoic_values']) < 2) {
-            throw new Exception('Debes seleccionar al menos 2 valores estoicos');
+        // Validar que daily_challenges sea un array y tenga al menos 2 elementos
+        if (!is_array($data['daily_challenges']) || count($data['daily_challenges']) < 2) {
+            throw new Exception('Debes seleccionar al menos 2 desafíos diarios');
+        }
+
+        // Validar que stoic_paths sea un array y tenga al menos 2 elementos
+        if (!is_array($data['stoic_paths']) || count($data['stoic_paths']) < 2) {
+            throw new Exception('Debes seleccionar al menos 2 caminos estoicos');
         }
     }
 }

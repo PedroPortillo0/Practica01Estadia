@@ -3,6 +3,41 @@
 @section('title', 'Gestión de Frases Diarias')
 
 @section('content')
+<!-- Información estadística (siempre visible) -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-calendar-check" style="font-size: 2rem; color: #3182ce;"></i>
+                <h5 class="mt-3">Día del Año Actual</h5>
+                <h2 style="color: #2c5282;">{{ date('z') + 1 }}</h2>
+                <p class="text-muted mb-0">{{ date('d/m/Y') }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-collection" style="font-size: 2rem; color: #5a6c7d;"></i>
+                <h5 class="mt-3">Total Frases</h5>
+                <h2 style="color: #2c5282;">{{ $total }}</h2>
+                <p class="text-muted mb-0">de 366 posibles</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-bar-chart" style="font-size: 2rem; color: #48bb78;"></i>
+                <h5 class="mt-3">Cobertura</h5>
+                <h2 style="color: #2c5282;">{{ $total > 0 ? round(($total / 366) * 100, 1) : 0 }}%</h2>
+                <p class="text-muted mb-0">del año completo</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla con scroll independiente -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <div>
@@ -15,7 +50,8 @@
     </div>
     <div class="card-body p-0">
         @if(count($quotes) > 0)
-            <div class="table-responsive">
+            <!-- Contenedor con scroll independiente -->
+            <div class="table-scroll-container">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
@@ -83,40 +119,58 @@
             </div>
         @endif
     </div>
-</div>
-
-<!-- Información adicional -->
-<div class="row">
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="bi bi-calendar-check" style="font-size: 2rem; color: var(--primary-color);"></i>
-                <h5 class="mt-3">Día del Año Actual</h5>
-                <h2 class="text-primary">{{ date('z') + 1 }}</h2>
-                <p class="text-muted mb-0">{{ date('d/m/Y') }}</p>
-            </div>
+    
+    <!-- Paginación (siempre visible) -->
+    @if(count($quotes) > 0 && $lastPage > 1)
+    <div class="card-footer">
+        <div class="d-flex justify-content-center">
+            <nav>
+                <ul class="pagination mb-0">
+                    <li class="page-item {{ $currentPage == 1 ? 'disabled' : '' }}">
+                        <a class="page-link" href="{{ route('admin.daily-quotes.index', ['page' => $currentPage - 1, 'limit' => $limit]) }}">
+                            <i class="bi bi-chevron-left"></i> Anterior
+                        </a>
+                    </li>
+                    
+                    @php
+                        $start = max(1, $currentPage - 2);
+                        $end = min($lastPage, $currentPage + 2);
+                    @endphp
+                    
+                    @if($start > 1)
+                        <li class="page-item">
+                            <a class="page-link" href="{{ route('admin.daily-quotes.index', ['page' => 1, 'limit' => $limit]) }}">1</a>
+                        </li>
+                        @if($start > 2)
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        @endif
+                    @endif
+                    
+                    @for ($i = $start; $i <= $end; $i++)
+                        <li class="page-item {{ $currentPage == $i ? 'active' : '' }}">
+                            <a class="page-link" href="{{ route('admin.daily-quotes.index', ['page' => $i, 'limit' => $limit]) }}">{{ $i }}</a>
+                        </li>
+                    @endfor
+                    
+                    @if($end < $lastPage)
+                        @if($end < $lastPage - 1)
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        @endif
+                        <li class="page-item">
+                            <a class="page-link" href="{{ route('admin.daily-quotes.index', ['page' => $lastPage, 'limit' => $limit]) }}">{{ $lastPage }}</a>
+                        </li>
+                    @endif
+                    
+                    <li class="page-item {{ $currentPage == $lastPage ? 'disabled' : '' }}">
+                        <a class="page-link" href="{{ route('admin.daily-quotes.index', ['page' => $currentPage + 1, 'limit' => $limit]) }}">
+                            Siguiente <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="bi bi-collection" style="font-size: 2rem; color: var(--secondary-color);"></i>
-                <h5 class="mt-3">Total Frases</h5>
-                <h2 class="text-primary">{{ $total }}</h2>
-                <p class="text-muted mb-0">de 366 posibles</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="bi bi-bar-chart" style="font-size: 2rem; color: #10b981;"></i>
-                <h5 class="mt-3">Cobertura</h5>
-                <h2 class="text-primary">{{ $total > 0 ? round(($total / 366) * 100, 1) : 0 }}%</h2>
-                <p class="text-muted mb-0">del año completo</p>
-            </div>
-        </div>
-    </div>
+    @endif
 </div>
 @endsection
 
