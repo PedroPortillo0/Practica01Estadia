@@ -31,7 +31,6 @@ class EloquentDailyQuoteRepository implements DailyQuoteRepositoryInterface
             return $this->toDomainEntity($quote);
         })->toArray();
     }
-    
     public function findAllActive(): array
     {
         $quotes = DailyQuote::where('is_active', true)

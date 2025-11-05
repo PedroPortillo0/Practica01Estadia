@@ -10,6 +10,7 @@ interface DailyQuoteRepositoryInterface
     
     public function findByDayOfYear(int $dayOfYear): ?DailyQuote;
     
+    
     public function findAll(): array;
     
     public function findAllActive(): array;
