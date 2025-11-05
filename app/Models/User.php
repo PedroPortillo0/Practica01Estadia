@@ -30,6 +30,7 @@ class User extends Model
         'google_id',
         'avatar',
         'auth_provider',
+        'is_admin',
     ];
 
     /**
@@ -51,6 +52,7 @@ class User extends Model
         return [
             'email_verificado' => 'boolean',
             'quiz_completed' => 'boolean',
+            'is_admin' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
