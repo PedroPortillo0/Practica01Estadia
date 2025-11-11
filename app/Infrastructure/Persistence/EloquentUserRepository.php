@@ -28,6 +28,7 @@ class EloquentUserRepository implements UserRepositoryInterface
                     'google_id' => $user->getGoogleId(),
                     'avatar' => $user->getAvatar(),
                     'auth_provider' => $user->getAuthProvider(),
+                    'is_admin' => $user->isAdmin(),
                 ]);
             } else {
                 // Crear nuevo usuario
@@ -42,6 +43,7 @@ class EloquentUserRepository implements UserRepositoryInterface
                     'google_id' => $user->getGoogleId(),
                     'avatar' => $user->getAvatar(),
                     'auth_provider' => $user->getAuthProvider(),
+                    'is_admin' => $user->isAdmin(),
                     'created_at' => $user->getFechaCreacion()
                 ]);
             }
@@ -142,7 +144,8 @@ class EloquentUserRepository implements UserRepositoryInterface
             new DateTime($userModel->created_at),
             $userModel->google_id,
             $userModel->avatar,
-            $userModel->auth_provider ?? 'local'
+            $userModel->auth_provider ?? 'local',
+            $userModel->is_admin ?? false
         );
     }
 

@@ -32,20 +32,19 @@
                 
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="day_of_year" class="form-label">Día del Año *</label>
+                        <label for="quote_date" class="form-label">Fecha *</label>
                         <input 
-                            type="number" 
-                            class="form-control @error('day_of_year') is-invalid @enderror" 
-                            id="day_of_year" 
-                            name="day_of_year" 
-                            min="1" 
-                            max="366" 
-                            value="{{ old('day_of_year', $quote['day_of_year']) }}"
+                            type="text" 
+                            class="form-control @error('quote_date') is-invalid @enderror" 
+                            id="quote_date" 
+                            name="quote_date" 
+                            value="{{ old('quote_date', $quote['quote_date'] ?? '') }}"
+                            placeholder="Selecciona una fecha"
                             required>
-                        @error('day_of_year')
+                        @error('quote_date')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <small class="text-muted">Entre 1 y 366</small>
+                        <small class="text-muted">Los días ocupados aparecen marcados en verde</small>
                     </div>
                     
                     <div class="mb-3">
@@ -128,6 +127,41 @@
 
 @section('scripts')
 <script>
+    // Configurar Flatpickr con días ocupados (excluyendo la fecha actual)
+    const occupiedDays = @json($occupiedDays ?? []);
+    
+    flatpickr("#quote_date", {
+        dateFormat: "Y-m-d",
+        minDate: new Date(new Date().getFullYear(), 0, 1),
+        maxDate: new Date(new Date().getFullYear(), 11, 31),
+        disable: occupiedDays,
+        allowInput: true,
+        onReady: function(selectedDates, dateStr, instance) {
+            // Marcar días ocupados con estilo especial
+            instance.calendarContainer.addEventListener('mouseover', function(e) {
+                const dayElement = e.target.closest('.flatpickr-day');
+                if (dayElement && dayElement.classList.contains('flatpickr-disabled')) {
+                    dayElement.title = 'Día ocupado';
+                }
+            });
+        }
+    });
+    
+    // Estilos para días ocupados
+    const style = document.createElement('style');
+    style.textContent = `
+        .flatpickr-day.flatpickr-disabled {
+            background-color: #d4edda !important;
+            color: #155724 !important;
+            border-color: #c3e6cb !important;
+            cursor: not-allowed !important;
+        }
+        .flatpickr-day.flatpickr-disabled:hover {
+            background-color: #c3e6cb !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
     document.getElementById('is_active').addEventListener('change', function() {
         const statusText = document.getElementById('status-text');
         if (this.checked) {
