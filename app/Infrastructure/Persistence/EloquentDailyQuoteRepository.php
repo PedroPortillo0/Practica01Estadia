@@ -18,7 +18,6 @@ class EloquentDailyQuoteRepository implements DailyQuoteRepositoryInterface
     public function findByDayOfYear(int $dayOfYear): ?DailyQuoteEntity
     {
         $quote = DailyQuote::where('day_of_year', $dayOfYear)
-            ->where('is_active', true)
             ->first();
         
         return $quote ? $this->toDomainEntity($quote) : null;
@@ -43,12 +42,32 @@ class EloquentDailyQuoteRepository implements DailyQuoteRepositoryInterface
         })->toArray();
     }
     
-    public function findAllPaginated(int $page, int $limit): array
+    public function findAllPaginated(int $page, int $limit, ?string $category = null, ?string $search = null): array
     {
         $offset = ($page - 1) * $limit;
-        $total = DailyQuote::count();
         
-        $quotes = DailyQuote::orderBy('day_of_year')
+        // Construir query base
+        $query = DailyQuote::query();
+        
+        // Aplicar filtro por categoría si se proporciona
+        if ($category && $category !== '') {
+            $query->where('category', $category);
+        }
+        
+        // Aplicar búsqueda general (frase y autor)
+        if ($search && $search !== '') {
+            $searchTerm = '%' . $search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('quote', 'LIKE', $searchTerm)
+                  ->orWhere('author', 'LIKE', $searchTerm);
+            });
+        }
+        
+        // Contar total con filtros aplicados
+        $total = $query->count();
+        
+        // Obtener frases con paginación y filtros
+        $quotes = $query->orderBy('day_of_year')
             ->offset($offset)
             ->limit($limit)
             ->get();
@@ -100,6 +119,19 @@ class EloquentDailyQuoteRepository implements DailyQuoteRepositoryInterface
         }
         
         return $quote->delete();
+    }
+    
+    public function reorderAfterDelete(int $deletedDayOfYear): void
+    {
+        // Obtener todas las frases con day_of_year mayor al eliminado
+        $quotesToReorder = DailyQuote::where('day_of_year', '>', $deletedDayOfYear)
+            ->orderBy('day_of_year')
+            ->get();
+        
+        // Actualizar cada frase para que su day_of_year sea (day_of_year - 1)
+        foreach ($quotesToReorder as $quote) {
+            $quote->update(['day_of_year' => $quote->day_of_year - 1]);
+        }
     }
     
     public function count(): int

@@ -6,6 +6,7 @@ use App\Application\UseCases\CreateDailyQuote;
 use App\Application\UseCases\UpdateDailyQuote;
 use App\Application\UseCases\DeleteDailyQuote;
 use App\Application\UseCases\GetAllDailyQuotes;
+use App\Domain\Ports\DailyQuoteRepositoryInterface;
 use Illuminate\Http\Request;
 
 class AdminDailyQuoteController extends Controller
@@ -14,17 +15,20 @@ class AdminDailyQuoteController extends Controller
     private UpdateDailyQuote $updateDailyQuote;
     private DeleteDailyQuote $deleteDailyQuote;
     private GetAllDailyQuotes $getAllDailyQuotes;
+    private DailyQuoteRepositoryInterface $dailyQuoteRepository;
 
     public function __construct(
         CreateDailyQuote $createDailyQuote,
         UpdateDailyQuote $updateDailyQuote,
         DeleteDailyQuote $deleteDailyQuote,
-        GetAllDailyQuotes $getAllDailyQuotes
+        GetAllDailyQuotes $getAllDailyQuotes,
+        DailyQuoteRepositoryInterface $dailyQuoteRepository
     ) {
         $this->createDailyQuote = $createDailyQuote;
         $this->updateDailyQuote = $updateDailyQuote;
         $this->deleteDailyQuote = $deleteDailyQuote;
         $this->getAllDailyQuotes = $getAllDailyQuotes;
+        $this->dailyQuoteRepository = $dailyQuoteRepository;
     }
 
     /**
@@ -34,19 +38,44 @@ class AdminDailyQuoteController extends Controller
     {
         $page = (int) $request->query('page', 1);
         $limit = (int) $request->query('limit', 50);
+        $category = $request->query('category', null);
+        $search = $request->query('search', null);
         
-        $result = $this->getAllDailyQuotes->execute($page, $limit);
+        $result = $this->getAllDailyQuotes->execute($page, $limit, $category, $search);
         
         $total = $result['total'] ?? 0;
         $lastPage = $limit > 0 ? (int) ceil($total / $limit) : 1;
+        
+        // Obtener todas las categorías disponibles para el filtro
+        $allCategories = $this->getAllCategories();
         
         return view('admin.daily-quotes.index', [
             'quotes' => $result['data'] ?? [],
             'total' => $total,
             'currentPage' => $page,
             'lastPage' => $lastPage,
-            'limit' => $limit
+            'limit' => $limit,
+            'selectedCategory' => $category,
+            'searchTerm' => $search,
+            'categories' => $allCategories
         ]);
+    }
+    
+    /**
+     * Obtiene todas las categorías disponibles
+     */
+    private function getAllCategories(): array
+    {
+        return [
+            'Filosofica' => 'Filosófica',
+            'Estoica' => 'Estoica',
+            'Motivacional' => 'Motivacional',
+            'Inspiracional' => 'Inspiracional',
+            'Liderazgo' => 'Liderazgo',
+            'Sabiduria' => 'Sabiduría',
+            'Exito' => 'Éxito',
+            'Perseverancia' => 'Perseverancia'
+        ];
     }
 
     /**
@@ -54,7 +83,43 @@ class AdminDailyQuoteController extends Controller
      */
     public function create()
     {
-        return view('admin.daily-quotes.create');
+        // Obtener días ocupados para el calendario
+        $occupiedDays = $this->getOccupiedDays();
+        
+        return view('admin.daily-quotes.create', [
+            'occupiedDays' => $occupiedDays
+        ]);
+    }
+    
+    /**
+     * Obtiene los días del año que ya están ocupados
+     */
+    private function getOccupiedDays(): array
+    {
+        $allQuotes = $this->dailyQuoteRepository->findAll();
+        $occupiedDays = [];
+        
+        foreach ($allQuotes as $quote) {
+            $dayOfYear = $quote->getDayOfYear();
+            // Convertir día del año a fecha del año actual
+            $date = $this->dayOfYearToDate($dayOfYear);
+            $occupiedDays[] = $date;
+        }
+        
+        return $occupiedDays;
+    }
+    
+    /**
+     * API endpoint para obtener días ocupados
+     */
+    public function getOccupiedDaysApi()
+    {
+        $occupiedDays = $this->getOccupiedDays();
+        
+        return response()->json([
+            'success' => true,
+            'occupiedDays' => $occupiedDays
+        ]);
     }
 
     /**
@@ -67,12 +132,27 @@ class AdminDailyQuoteController extends Controller
                 'quote' => 'required|string|max:1000',
                 'author' => 'required|string|max:100',
                 'category' => 'required|string|max:50',
-                'day_of_year' => 'required|integer|min:1|max:366|unique:daily_quotes,day_of_year',
+                'quote_date' => 'required|date',
                 'is_active' => 'nullable|boolean'
             ]);
 
+            // Convertir fecha a día del año
+            $dayOfYear = $this->dateToDayOfYear($validated['quote_date']);
+            
+            // Validar que el día del año no esté duplicado
+            $existingQuote = $this->dailyQuoteRepository->findByDayOfYear($dayOfYear);
+            if ($existingQuote) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Ya existe una frase para el día ' . $dayOfYear . ' del año');
+            }
+
             // Asegurar que is_active sea boolean
             $validated['is_active'] = isset($validated['is_active']) ? (bool)$validated['is_active'] : true;
+            
+            // Agregar day_of_year calculado
+            $validated['day_of_year'] = $dayOfYear;
 
             $result = $this->createDailyQuote->execute($validated);
 
@@ -93,18 +173,57 @@ class AdminDailyQuoteController extends Controller
      */
     public function edit($id)
     {
-        $result = $this->getAllDailyQuotes->execute(false);
-        $quotes = $result['data'] ?? [];
-        
-        $quote = collect($quotes)->firstWhere('id', (int)$id);
-        
-        if (!$quote) {
+        try {
+            $quoteEntity = $this->dailyQuoteRepository->findById((int)$id);
+            
+            if (!$quoteEntity) {
+                return redirect()
+                    ->route('admin.daily-quotes.index')
+                    ->with('error', 'Frase no encontrada');
+            }
+
+            $quoteArray = $quoteEntity->toArray();
+            
+            // Convertir día del año a fecha (usando año actual)
+            $quoteArray['quote_date'] = $this->dayOfYearToDate($quoteArray['day_of_year']);
+            
+            // Obtener días ocupados para el calendario (excluyendo la fecha actual)
+            $occupiedDays = $this->getOccupiedDays();
+            $currentDate = $quoteArray['quote_date'];
+            $occupiedDays = array_filter($occupiedDays, function($date) use ($currentDate) {
+                return $date !== $currentDate;
+            });
+
+            return view('admin.daily-quotes.edit', [
+                'quote' => $quoteArray,
+                'occupiedDays' => $occupiedDays
+            ]);
+        } catch (\Exception $e) {
             return redirect()
                 ->route('admin.daily-quotes.index')
-                ->with('error', 'Frase no encontrada');
+                ->with('error', 'Error al obtener la frase: ' . $e->getMessage());
         }
-
-        return view('admin.daily-quotes.edit', ['quote' => $quote]);
+    }
+    
+    /**
+     * Convierte día del año a fecha (formato Y-m-d)
+     */
+    private function dayOfYearToDate(int $dayOfYear): string
+    {
+        $year = date('Y');
+        $date = new \DateTime();
+        $date->setDate($year, 1, 1);
+        $date->modify('+' . ($dayOfYear - 1) . ' days');
+        return $date->format('Y-m-d');
+    }
+    
+    /**
+     * Convierte fecha a día del año
+     */
+    private function dateToDayOfYear(string $date): int
+    {
+        $timestamp = strtotime($date);
+        return (int) date('z', $timestamp) + 1;
     }
 
     /**
@@ -117,12 +236,27 @@ class AdminDailyQuoteController extends Controller
                 'quote' => 'required|string|max:1000',
                 'author' => 'required|string|max:100',
                 'category' => 'required|string|max:50',
-                'day_of_year' => 'required|integer|min:1|max:366|unique:daily_quotes,day_of_year,' . $id,
+                'quote_date' => 'required|date',
                 'is_active' => 'nullable|boolean'
             ]);
 
+            // Convertir fecha a día del año
+            $dayOfYear = $this->dateToDayOfYear($validated['quote_date']);
+            
+            // Verificar que el día del año no esté duplicado (excepto la frase actual)
+            $existingQuote = $this->dailyQuoteRepository->findByDayOfYear($dayOfYear);
+            if ($existingQuote && $existingQuote->getId() != $id) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Ya existe una frase para el día ' . $dayOfYear . ' del año');
+            }
+
             // Asegurar que is_active sea boolean
             $validated['is_active'] = isset($validated['is_active']) ? (bool)$validated['is_active'] : false;
+            
+            // Agregar day_of_year calculado
+            $validated['day_of_year'] = $dayOfYear;
 
             $result = $this->updateDailyQuote->execute((int)$id, $validated);
 

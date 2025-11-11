@@ -116,8 +116,14 @@ Route::prefix('daily-quote')->group(function () {
 Route::prefix('diario')->middleware('jwt.auth')->group(function () {
     // Obtener reflexiones del día (opcional ?date=YYYY-MM-DD)
     Route::get('/', [DiarioController::class, 'show']);
-    // Guardar o actualizar las reflexiones para una fecha dada
+    // Guardar o actualizar (crear) las reflexiones para una fecha dada
     Route::post('/', [DiarioController::class, 'store']);
+
+    // Actualizar parcialmente una reflexión por id (solo del usuario autenticado)
+    Route::patch('/{id}', [DiarioController::class, 'update']);
+
+    // Eliminar una reflexión por id (solo del usuario autenticado)
+    Route::delete('/{id}', [DiarioController::class, 'destroy']);
 });
 
 

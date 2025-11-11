@@ -19,12 +19,14 @@ class GetAllDailyQuotes
      * 
      * @param int $page Número de página (por defecto 1)
      * @param int $limit Cantidad de resultados por página (por defecto 10)
+     * @param string|null $category Categoría para filtrar (opcional)
+     * @param string|null $search Término de búsqueda general (opcional)
      * @return array
      */
-    public function execute(int $page = 1, int $limit = 10): array
+    public function execute(int $page = 1, int $limit = 10, ?string $category = null, ?string $search = null): array
     {
         try {
-            $result = $this->repository->findAllPaginated($page, $limit);
+            $result = $this->repository->findAllPaginated($page, $limit, $category, $search);
             
             $quotesArray = array_map(function ($quote) {
                 return $quote->toArray();

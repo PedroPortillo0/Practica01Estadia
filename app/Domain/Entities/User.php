@@ -17,7 +17,8 @@ class User
         private ?DateTime $fechaCreacion = null,
         private ?string $googleId = null,
         private ?string $avatar = null,
-        private string $authProvider = 'local'
+        private string $authProvider = 'local',
+        private bool $isAdmin = false
     ) {
         $this->fechaCreacion = $fechaCreacion ?? new DateTime();
     }
@@ -76,6 +77,11 @@ class User
     public function getAuthProvider(): string
     {
         return $this->authProvider;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->isAdmin;
     }
 
     // Métodos de negocio
@@ -139,6 +145,7 @@ class User
             'googleId' => $this->googleId,
             'avatar' => $this->avatar,
             'authProvider' => $this->authProvider,
+            'isAdmin' => $this->isAdmin,
             'fechaCreacion' => $this->fechaCreacion->format('Y-m-d H:i:s')
         ];
     }

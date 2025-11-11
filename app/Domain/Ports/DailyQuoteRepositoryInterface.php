@@ -15,13 +15,15 @@ interface DailyQuoteRepositoryInterface
     
     public function findAllActive(): array;
     
-    public function findAllPaginated(int $page, int $limit): array;
+    public function findAllPaginated(int $page, int $limit, ?string $category = null, ?string $search = null): array;
     
     public function save(DailyQuote $quote): DailyQuote;
     
     public function update(DailyQuote $quote): DailyQuote;
     
     public function delete(int $id): bool;
+    
+    public function reorderAfterDelete(int $deletedDayOfYear): void;
     
     public function count(): int;
 }

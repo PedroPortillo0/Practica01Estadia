@@ -52,19 +52,19 @@ class DiarioController extends Controller
 
         $hour = $overrideHour ?? $computedHour;
 
-    // Ventanas horarias (ajustadas):
-    // - Mañana: 01:00 (inclusive) hasta 12:00 (inclusive)
-    // - Tarde: 13:00 (inclusive) hasta 23:00 (inclusive)
-    $morning_start = 1;   // 01:00
-    $morning_end = 12;    // 12:00 (inclusive)
-    $evening_start = 13;  // 13:00 (01:00 PM)
-    $evening_end = 24;    // 23:00 (11:00 PM) (inclusive)
+    // Ventanas horarias solicitadas:
+    // - Mañana: 00:00 hasta 11:59 (horas 0..11 inclusive)
+    // - Tarde: 12:00 hasta 23:59 (horas 12..23 inclusive)
+    $morning_start = 0;   // 00:00
+    $morning_end = 11;    // 11:59 (hora 11 inclusive)
+    $evening_start = 12;  // 12:00 (mediodía)
+    $evening_end = 23;    // 23:59 (hora 23 inclusive)
 
         if (!empty($data['morning_text'])) {
             // Aceptamos horas entre morning_start y morning_end, ambos inclusive
             if ($hour < $morning_start || $hour > $morning_end) {
                 return response()->json([
-                    'message' => "La reflexión matutina sólo puede guardarse en horario de la mañana ({$morning_start}:00-{$morning_end}:00).",
+                    'message' => "La reflexión matutina sólo puede guardarse en horario de la mañana (00:00-11:59).",
                     'debug' => [
                         'user_timezone' => $tz,
                         'computed_hour' => $computedHour,
@@ -79,7 +79,7 @@ class DiarioController extends Controller
             // Aceptamos horas entre evening_start y evening_end, ambos inclusive
             if ($hour < $evening_start || $hour > $evening_end) {
                 return response()->json([
-                    'message' => "La reflexión vespertina sólo puede guardarse en horario de la tarde ({$evening_start}:00-{$evening_end}:00).",
+                    'message' => "La reflexión vespertina sólo puede guardarse en horario de la tarde (12:00-23:59).",
                     'debug' => [
                         'user_timezone' => $tz,
                         'computed_hour' => $computedHour,
@@ -155,5 +155,68 @@ class DiarioController extends Controller
         }
 
         return response()->json(['data' => $reflection], 200);
+    }
+
+    /**
+     * Actualizar una reflexión existente (solo del usuario autenticado).
+     * Acepta `morning_text` y/o `evening_text`. Devuelve 404 si no existe o no pertenece al usuario.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = $request->attributes->get('authenticated_user');
+        if (! $user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        $data = $request->validate([
+            'morning_text' => 'nullable|string|max:1000',
+            'evening_text' => 'nullable|string|max:1000',
+        ]);
+
+        // Buscar reflexión por id y usuario
+        $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+        if (! $reflection) {
+            return response()->json(['message' => 'Reflexión no encontrada.'], 404);
+        }
+
+        // Si no se envía ningún campo a actualizar, devolver 422
+        if (! array_key_exists('morning_text', $data) && ! array_key_exists('evening_text', $data)) {
+            return response()->json(['message' => 'No hay campos para actualizar. Enviar morning_text o evening_text.'], 422);
+        }
+
+        if (array_key_exists('morning_text', $data)) {
+            $reflection->morning_text = $data['morning_text'];
+        }
+
+        if (array_key_exists('evening_text', $data)) {
+            $reflection->evening_text = $data['evening_text'];
+        }
+
+        $reflection->save();
+
+        return response()->json([
+            'message' => 'Reflexión actualizada correctamente.',
+            'data' => $reflection,
+        ], 200);
+    }
+
+    /**
+     * Eliminar una reflexión del usuario autenticado.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->attributes->get('authenticated_user');
+        if (! $user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+        if (! $reflection) {
+            return response()->json(['message' => 'Reflexión no encontrada.'], 404);
+        }
+
+        $reflection->delete();
+
+        return response()->json(['message' => 'Reflexión eliminada correctamente.'], 200);
     }
 }
