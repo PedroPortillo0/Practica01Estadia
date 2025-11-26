@@ -52,19 +52,19 @@ class DiarioController extends Controller
 
         $hour = $overrideHour ?? $computedHour;
 
-    // Ventanas horarias (ajustadas):
-    // - Mañana: 01:00 (inclusive) hasta 12:00 (inclusive)
-    // - Tarde: 13:00 (inclusive) hasta 23:00 (inclusive)
-    $morning_start = 1;   // 01:00
-    $morning_end = 12;    // 12:00 (inclusive)
-    $evening_start = 13;  // 13:00 (01:00 PM)
-    $evening_end = 24;    // 23:00 (11:00 PM) (inclusive)
+    // Ventanas horarias solicitadas:
+    // - Mañana: 00:00 hasta 11:59 (horas 0..11 inclusive)
+    // - Tarde: 12:00 hasta 23:59 (horas 12..23 inclusive)
+    $morning_start = 0;   // 00:00
+    $morning_end = 11;    // 11:59 (hora 11 inclusive)
+    $evening_start = 12;  // 12:00 (mediodía)
+    $evening_end = 23;    // 23:59 (hora 23 inclusive)
 
         if (!empty($data['morning_text'])) {
             // Aceptamos horas entre morning_start y morning_end, ambos inclusive
             if ($hour < $morning_start || $hour > $morning_end) {
                 return response()->json([
-                    'message' => "La reflexión matutina sólo puede guardarse en horario de la mañana ({$morning_start}:00-{$morning_end}:00).",
+                    'message' => "La reflexión matutina sólo puede guardarse en horario de la mañana (00:00-11:59).",
                     'debug' => [
                         'user_timezone' => $tz,
                         'computed_hour' => $computedHour,
@@ -79,7 +79,7 @@ class DiarioController extends Controller
             // Aceptamos horas entre evening_start y evening_end, ambos inclusive
             if ($hour < $evening_start || $hour > $evening_end) {
                 return response()->json([
-                    'message' => "La reflexión vespertina sólo puede guardarse en horario de la tarde ({$evening_start}:00-{$evening_end}:00).",
+                    'message' => "La reflexión vespertina sólo puede guardarse en horario de la tarde (12:00-23:59).",
                     'debug' => [
                         'user_timezone' => $tz,
                         'computed_hour' => $computedHour,
