@@ -156,4 +156,67 @@ class DiarioController extends Controller
 
         return response()->json(['data' => $reflection], 200);
     }
+
+    /**
+     * Actualizar una reflexión existente (solo del usuario autenticado).
+     * Acepta `morning_text` y/o `evening_text`. Devuelve 404 si no existe o no pertenece al usuario.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = $request->attributes->get('authenticated_user');
+        if (! $user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        $data = $request->validate([
+            'morning_text' => 'nullable|string|max:1000',
+            'evening_text' => 'nullable|string|max:1000',
+        ]);
+
+        // Buscar reflexión por id y usuario
+        $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+        if (! $reflection) {
+            return response()->json(['message' => 'Reflexión no encontrada.'], 404);
+        }
+
+        // Si no se envía ningún campo a actualizar, devolver 422
+        if (! array_key_exists('morning_text', $data) && ! array_key_exists('evening_text', $data)) {
+            return response()->json(['message' => 'No hay campos para actualizar. Enviar morning_text o evening_text.'], 422);
+        }
+
+        if (array_key_exists('morning_text', $data)) {
+            $reflection->morning_text = $data['morning_text'];
+        }
+
+        if (array_key_exists('evening_text', $data)) {
+            $reflection->evening_text = $data['evening_text'];
+        }
+
+        $reflection->save();
+
+        return response()->json([
+            'message' => 'Reflexión actualizada correctamente.',
+            'data' => $reflection,
+        ], 200);
+    }
+
+    /**
+     * Eliminar una reflexión del usuario autenticado.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->attributes->get('authenticated_user');
+        if (! $user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+        if (! $reflection) {
+            return response()->json(['message' => 'Reflexión no encontrada.'], 404);
+        }
+
+        $reflection->delete();
+
+        return response()->json(['message' => 'Reflexión eliminada correctamente.'], 200);
+    }
 }
