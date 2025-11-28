@@ -11,13 +11,13 @@ use Exception;
 class GetDailyQuote
 {
     private DailyQuoteRepositoryInterface $repository;
-    private ?GeneratePersonalizedQuoteExplanation $personalizeQuote;
-    private ?UserRepositoryInterface $userRepository;
+    private GeneratePersonalizedQuoteExplanation $personalizeQuote;
+    private UserRepositoryInterface $userRepository;
 
     public function __construct(
         DailyQuoteRepositoryInterface $repository,
-        ?GeneratePersonalizedQuoteExplanation $personalizeQuote = null,
-        ?UserRepositoryInterface $userRepository = null
+        GeneratePersonalizedQuoteExplanation $personalizeQuote,
+        UserRepositoryInterface $userRepository
     ) {
         $this->repository = $repository;
         $this->personalizeQuote = $personalizeQuote;
@@ -53,7 +53,7 @@ class GetDailyQuote
             ];
 
             // Verificar si el usuario tiene quiz completo y generar personalización
-            if ($userId && $this->userRepository && $this->personalizeQuote) {
+            if ($userId) {
                 $user = $this->userRepository->findById($userId);
                 
                 if ($user && $user->isQuizCompleted()) {
@@ -61,19 +61,25 @@ class GetDailyQuote
                     $userQuiz = UserQuizResponse::where('user_id', $userId)->first();
                     
                     if ($userQuiz) {
-                        // Generar frase personalizada con IA
-                        $personalizedResult = $this->personalizeQuote->execute($dailyQuoteData, $userQuiz);
-                        
-                        if ($personalizedResult['success']) {
-                            // Retornar solo la frase personalizada (no la original)
-                            return [
-                                'success' => true,
-                                'data' => array_merge($personalizedResult['data'], [
-                                    'id' => $quoteEntity->getId(),
-                                    'date' => date('Y-m-d'),
-                                    'day_of_year' => $dayOfYear,
-                                ])
-                            ];
+                        try {
+                            // Generar frase personalizada con IA
+                            $personalizedResult = $this->personalizeQuote->execute($dailyQuoteData, $userQuiz);
+                            
+                            if ($personalizedResult['success']) {
+                                // Retornar solo la frase personalizada (no la original)
+                                return [
+                                    'success' => true,
+                                    'data' => array_merge($personalizedResult['data'], [
+                                        'id' => $quoteEntity->getId(),
+                                        'date' => date('Y-m-d'),
+                                        'day_of_year' => $dayOfYear,
+                                    ])
+                                ];
+                            }
+                        } catch (Exception $e) {
+                            // Si hay error generando la personalización, loguear y continuar con frase normal
+                            \Illuminate\Support\Facades\Log::error('Error generando frase personalizada: ' . $e->getMessage());
+                            // Continuar para devolver frase normal
                         }
                     }
                 }

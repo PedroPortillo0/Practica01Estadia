@@ -153,20 +153,21 @@ INSTRUCCIONES:
    - Sea única, original y personalizada para este usuario específico
    - NO use las mismas palabras, estructura o frases de la original
 
-2. ESCRIBE UNA EXPLICACIÓN DETALLADA (mínimo 250 palabras) en TONO SERIO que:
-   - Explique el significado profundo de la NUEVA frase personalizada
+2. ESCRIBE UNA EXPLICACIÓN MODERADA (entre 120-180 palabras) en TONO SERIO que:
+   - Explique el significado de la NUEVA frase personalizada de forma clara y concreta
    - Conecte la enseñanza con los caminos estoicos específicos del usuario
    - Relacione la sabiduría con sus desafíos diarios concretos
-   - Muestre cómo aplicar esta enseñanza en su vida diaria
-   - Use un TONO SERIO, profesional, reflexivo y respetuoso
-   - Sea clara, profunda y bien estructurada
+   - Muestre cómo aplicar esta enseñanza en su vida diaria de forma práctica
+   - Use un TONO SERIO pero accesible, profesional y reflexivo
+   - Sea CONCRETA, FÁCIL DE ENTENDER y bien estructurada
+   - Evite ser demasiado larga o demasiado corta (longitud moderada)
    - Considere su nivel de práctica espiritual
    - Respete sus creencias religiosas
 
 FORMATO DE RESPUESTA (JSON estricto, sin markdown, sin texto adicional):
 {
   \"personalized_quote\": \"La frase estoica NUEVA y personalizada (diferente a la original)\",
-  \"explanation\": \"Explicación detallada en tono serio (mínimo 250 palabras)\"
+  \"explanation\": \"Explicación moderada, concreta y fácil de entender (entre 120-180 palabras)\"
 }
 
 RECUERDA:
@@ -204,9 +205,12 @@ RECUERDA:
                     throw new Exception('La IA no generó una frase personalizada diferente. Por favor, intenta de nuevo.');
                 }
                 
-                // Validar que la explicación tenga contenido suficiente
-                if (strlen($explanation) < 100) {
-                    Log::warning('La explicación es demasiado corta: ' . strlen($explanation) . ' caracteres');
+                // Validar que la explicación tenga longitud moderada (entre 120-180 palabras aprox)
+                $wordCount = str_word_count($explanation);
+                if ($wordCount < 100) {
+                    Log::warning('La explicación es demasiado corta: ' . $wordCount . ' palabras');
+                } elseif ($wordCount > 250) {
+                    Log::info('La explicación es más larga de lo esperado: ' . $wordCount . ' palabras (se esperaba 120-180)');
                 }
                 
                 return [
