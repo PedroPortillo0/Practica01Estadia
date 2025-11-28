@@ -94,14 +94,20 @@ Route::prefix('quiz')->middleware('jwt.auth')->group(function () {
 });
 
 // ========================================
-// RUTAS DE FRASES DIARIAS (Públicas)
+// RUTAS DE FRASES DIARIAS (Requieren autenticación JWT)
 // ========================================
+// Si el usuario tiene quiz completo → recibe frase personalizada con IA
+// Si el usuario NO tiene quiz completo → recibe frase normal
 
-Route::prefix('daily-quote')->group(function () {
+Route::prefix('daily-quote')->middleware('jwt.auth')->group(function () {
     // Obtener frase del día (simple para dashboard)
+    // Si tiene quiz completo → frase personalizada
+    // Si no tiene quiz → frase normal
     Route::get('/', [DailyQuoteController::class, 'getDailyQuote']);
     
     // Obtener detalle completo de la frase del día
+    // Si tiene quiz completo → frase personalizada
+    // Si no tiene quiz → frase normal
     Route::get('/detail', [DailyQuoteController::class, 'getDailyQuoteDetail']);
     
     // Obtener todas las frases (para testing/admin)
