@@ -28,9 +28,9 @@ AI_PROJECT_ID=tu_project_id
 
 ```env
 AI_PROVIDER=gemini
-AI_API_KEY=AIzaSyCujx7D1HQ6OzFusLRxfWx3-GeFXHLt7Cw
-AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
-AI_PROJECT_ID=36888884557
+AI_API_KEY=sk-tu_api_key_de_openai
+AI_BASE_URL=https://api.openai.com/v1
+AI_OPENAI_MODEL=gpt-3.5-turbo
 ```
 
 **Nota:** `AI_PROJECT_ID` es opcional para Gemini cuando se usa API key directamente.
