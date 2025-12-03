@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\UseCases\GetDailyQuote;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DailyQuoteController extends Controller
 {
@@ -13,24 +14,36 @@ class DailyQuoteController extends Controller
 
     /**
      * Obtiene la frase del día (versión simple para dashboard)
+     * Si el usuario está autenticado y tiene quiz completo, devuelve frase personalizada
      * 
+     * @param Request $request
      * @return JsonResponse
      */
-    public function getDailyQuote(): JsonResponse
+    public function getDailyQuote(Request $request): JsonResponse
     {
-        $result = $this->getDailyQuote->execute(includeDetail: false);
+        // Intentar obtener usuario autenticado (puede ser null si no está autenticado)
+        $user = $request->attributes->get('authenticated_user');
+        $userId = $user ? $user->getId() : null;
+
+        $result = $this->getDailyQuote->execute(includeDetail: false, userId: $userId);
         
         return response()->json($result, $result['success'] ? 200 : 500);
     }
 
     /**
      * Obtiene el detalle completo de la frase del día
+     * Si el usuario está autenticado y tiene quiz completo, devuelve frase personalizada
      * 
+     * @param Request $request
      * @return JsonResponse
      */
-    public function getDailyQuoteDetail(): JsonResponse
+    public function getDailyQuoteDetail(Request $request): JsonResponse
     {
-        $result = $this->getDailyQuote->execute(includeDetail: true);
+        // Intentar obtener usuario autenticado (puede ser null si no está autenticado)
+        $user = $request->attributes->get('authenticated_user');
+        $userId = $user ? $user->getId() : null;
+
+        $result = $this->getDailyQuote->execute(includeDetail: true, userId: $userId);
         
         return response()->json($result, $result['success'] ? 200 : 500);
     }

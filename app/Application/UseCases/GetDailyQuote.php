@@ -3,24 +3,36 @@
 namespace App\Application\UseCases;
 
 use App\Domain\Ports\DailyQuoteRepositoryInterface;
+use App\Application\UseCases\GeneratePersonalizedQuoteExplanation;
+use App\Domain\Ports\UserRepositoryInterface;
+use App\Models\UserQuizResponse;
 use Exception;
 
 class GetDailyQuote
 {
     private DailyQuoteRepositoryInterface $repository;
+    private GeneratePersonalizedQuoteExplanation $personalizeQuote;
+    private UserRepositoryInterface $userRepository;
 
-    public function __construct(DailyQuoteRepositoryInterface $repository)
-    {
+    public function __construct(
+        DailyQuoteRepositoryInterface $repository,
+        GeneratePersonalizedQuoteExplanation $personalizeQuote,
+        UserRepositoryInterface $userRepository
+    ) {
         $this->repository = $repository;
+        $this->personalizeQuote = $personalizeQuote;
+        $this->userRepository = $userRepository;
     }
 
     /**
      * Obtiene la frase del día basada en el día del año
+     * Si el usuario tiene quiz completo, genera una frase personalizada con IA
      *
      * @param bool $includeDetail Si debe incluir información completa
+     * @param string|null $userId ID del usuario autenticado (opcional)
      * @return array
      */
-    public function execute(bool $includeDetail = false): array
+    public function execute(bool $includeDetail = false, ?string $userId = null): array
     {
         try {
             // Calcular el día del año (1-366)
@@ -33,6 +45,47 @@ class GetDailyQuote
                 throw new Exception('No hay frase disponible para el día de hoy');
             }
 
+            // Preparar datos de la frase del día
+            $dailyQuoteData = [
+                'quote' => $quoteEntity->getQuote(),
+                'author' => $quoteEntity->getAuthor(),
+                'category' => $quoteEntity->getCategory(),
+            ];
+
+            // Verificar si el usuario tiene quiz completo y generar personalización
+            if ($userId) {
+                $user = $this->userRepository->findById($userId);
+                
+                if ($user && $user->isQuizCompleted()) {
+                    // Obtener datos del quiz del usuario
+                    $userQuiz = UserQuizResponse::where('user_id', $userId)->first();
+                    
+                    if ($userQuiz) {
+                        try {
+                            // Generar frase personalizada con IA
+                            $personalizedResult = $this->personalizeQuote->execute($dailyQuoteData, $userQuiz);
+                            
+                            if ($personalizedResult['success']) {
+                                // Retornar solo la frase personalizada (no la original)
+                                return [
+                                    'success' => true,
+                                    'data' => array_merge($personalizedResult['data'], [
+                                        'id' => $quoteEntity->getId(),
+                                        'date' => date('Y-m-d'),
+                                        'day_of_year' => $dayOfYear,
+                                    ])
+                                ];
+                            }
+                        } catch (Exception $e) {
+                            // Si hay error generando la personalización, loguear y continuar con frase normal
+                            \Illuminate\Support\Facades\Log::error('Error generando frase personalizada: ' . $e->getMessage());
+                            // Continuar para devolver frase normal
+                        }
+                    }
+                }
+            }
+
+            // Si no tiene quiz completo o hay error, devolver frase normal
             // Preparar respuesta según si se pide detalle o no
             if ($includeDetail) {
                 return [
@@ -44,7 +97,8 @@ class GetDailyQuote
                         'category' => $quoteEntity->getCategory(),
                         'date' => date('Y-m-d'),
                         'day_of_year' => $dayOfYear,
-                        'is_active' => $quoteEntity->isActive()
+                        'is_active' => $quoteEntity->isActive(),
+                        'is_personalized' => false
                     ]
                 ];
             }
@@ -57,7 +111,8 @@ class GetDailyQuote
                     'quote' => $quoteEntity->getQuote(),
                     'author' => $quoteEntity->getAuthor(),
                     'category' => $quoteEntity->getCategory(),
-                    'date' => date('Y-m-d')
+                    'date' => date('Y-m-d'),
+                    'is_personalized' => false
                 ]
             ];
 
