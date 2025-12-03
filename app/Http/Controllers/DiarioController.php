@@ -10,113 +10,62 @@ use Carbon\Carbon;
 class DiarioController extends Controller
 {
     /**
-     * Guardar o actualizar reflexiones matutina/vespertina para una fecha.
-     *
-     * Reglas de horario (suposición):
-     *  - Mañana: 04:00 - 12:00
-     *  - Tarde: 12:00 - 20:00
-     *
-     * Si se intenta guardar la reflexión matutina fuera del horario de mañana,
-     * se devuelve error 422. Lo mismo para la reflexión vespertina.
+     * Guardar o actualizar una sola reflexión para la fecha actual.
+     * - La fecha se calcula automáticamente (no se acepta `date` desde el cliente).
+     * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
+     * - Se registra la hora en `created_at`/`updated_at`.
      */
     public function store(Request $request)
     {
-        // El middleware JwtAuthMiddleware inyecta el usuario autenticado en
-        // los atributos de la request como 'authenticated_user'. No se usa el
-        // facade Auth en este proyecto hexagonal, por eso Auth::user() puede
-        // devolver null.
         $user = $request->attributes->get('authenticated_user');
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'No autenticado.'], 401);
         }
 
         $data = $request->validate([
-            'date' => 'required|date',
-            'morning_text' => 'nullable|string|max:1000',
-            'evening_text' => 'nullable|string|max:1000',
+            'text' => 'required|string|max:2000',
         ]);
 
-        // Hora actual con posibilidad de tomar la zona horaria del usuario si existe
         $tz = $user->timezone ?? config('app.timezone', 'UTC');
         $now = Carbon::now($tz);
-        $computedHour = (int)$now->format('H');
+        $date = $now->toDateString();
 
-        // Soporte para pruebas: permitir sobreescribir la hora mediante cabecera X-Test-Hour
-        // o parámetro query ?test_hour=HH — útil para debug sin cambiar el reloj del servidor.
-        $overrideHour = null;
-        if ($request->headers->has('X-Test-Hour')) {
-            $overrideHour = (int) $request->header('X-Test-Hour');
-        } elseif ($request->query('test_hour') !== null) {
-            $overrideHour = (int) $request->query('test_hour');
-        }
-
-        $hour = $overrideHour ?? $computedHour;
-
-    // Ventanas horarias solicitadas:
-    // - Mañana: 00:00 hasta 11:59 (horas 0..11 inclusive)
-    // - Tarde: 12:00 hasta 23:59 (horas 12..23 inclusive)
-    $morning_start = 0;   // 00:00
-    $morning_end = 11;    // 11:59 (hora 11 inclusive)
-    $evening_start = 12;  // 12:00 (mediodía)
-    $evening_end = 23;    // 23:59 (hora 23 inclusive)
-
-        if (!empty($data['morning_text'])) {
-            // Aceptamos horas entre morning_start y morning_end, ambos inclusive
-            if ($hour < $morning_start || $hour > $morning_end) {
-                return response()->json([
-                    'message' => "La reflexión matutina sólo puede guardarse en horario de la mañana (00:00-11:59).",
-                    'debug' => [
-                        'user_timezone' => $tz,
-                        'computed_hour' => $computedHour,
-                        'effective_hour' => $hour,
-                        'override' => $overrideHour !== null,
-                    ]
-                ], 422);
-            }
-        }
-
-        if (!empty($data['evening_text'])) {
-            // Aceptamos horas entre evening_start y evening_end, ambos inclusive
-            if ($hour < $evening_start || $hour > $evening_end) {
-                return response()->json([
-                    'message' => "La reflexión vespertina sólo puede guardarse en horario de la tarde (12:00-23:59).",
-                    'debug' => [
-                        'user_timezone' => $tz,
-                        'computed_hour' => $computedHour,
-                        'effective_hour' => $hour,
-                        'override' => $overrideHour !== null,
-                    ]
-                ], 422);
-            }
-        }
-
-        // Guardar o actualizar la reflexión del usuario para la fecha indicada
-        // El objeto User en Domain\Entities tiene la propiedad id privada,
-        // exponemos el id a través de getId().
+        // Guardar o actualizar la reflexión del usuario para la fecha actual
         $reflection = Reflection::firstOrNew([
             'user_id' => $user->getId(),
-            'date' => $data['date'],
+            'date' => $date,
         ]);
 
-        if (array_key_exists('morning_text', $data)) {
-            $reflection->morning_text = $data['morning_text'];
-        }
-        if (array_key_exists('evening_text', $data)) {
-            $reflection->evening_text = $data['evening_text'];
-        }
-
+        $isNew = ! $reflection->exists;
+        $reflection->text = $data['text'];
         $reflection->save();
 
+        // Devolver la hora registrada (created_at) en la zona del usuario
+        $time = $reflection->created_at
+            ? $reflection->created_at->setTimezone($tz)->format('H:i:s')
+            : $now->format('H:i:s');
+
         return response()->json([
-            'message' => 'Reflexión guardada correctamente.',
-            'data' => $reflection,
-        ], 201);
+            'message' => $isNew ? 'Reflexión creada correctamente.' : 'Reflexión actualizada correctamente.',
+            'data' => [
+                'id' => $reflection->id,
+                'user_id' => $reflection->user_id,
+                'date' => $reflection->date,
+                'text' => $reflection->text,
+                'time' => $time,
+            ]
+        ], $isNew ? 201 : 200);
     }
 
     /**
      * Obtener las reflexiones del día para el usuario autenticado.
      * Si se proporciona ?date=YYYY-MM-DD se usa esa fecha; de lo contrario se usa la fecha actual
      * en la zona horaria del usuario (si está disponible) o UTC.
+     */
+    /**
+     * Mostrar reflexiones:
+     * - Si ?all=1 → devuelve todas las reflexiones del usuario
+     * - Si no → devuelve la reflexión del día actual (fecha automática)
      */
     public function show(Request $request)
     {
@@ -125,36 +74,75 @@ class DiarioController extends Controller
             return response()->json(['message' => 'No autenticado.'], 401);
         }
 
-        // Determinar fecha objetivo
         $tz = $user->timezone ?? config('app.timezone', 'UTC');
-        $dateParam = $request->query('date');
-        if ($dateParam) {
-            try {
-                $date = Carbon::parse($dateParam, $tz)->toDateString();
-            } catch (\Throwable $e) {
-                return response()->json(['message' => 'Formato de fecha inválido. Use YYYY-MM-DD.'], 422);
-            }
-        } else {
-            $date = Carbon::now($tz)->toDateString();
+
+        if ($request->query('all')) {
+            $all = Reflection::where('user_id', $user->getId())
+                ->orderBy('date', 'desc')
+                ->get()
+                ->map(function($r) use ($tz) {
+                    return [
+                        'id' => $r->id,
+                        'date' => $r->date,
+                        'text' => $r->text,
+                        'time' => $r->created_at ? $r->created_at->setTimezone($tz)->format('H:i:s') : null,
+                    ];
+                });
+
+            return response()->json(['data' => $all], 200);
         }
+
+        $date = Carbon::now($tz)->toDateString();
 
         $reflection = Reflection::where('user_id', $user->getId())
             ->where('date', $date)
             ->first();
 
         if (! $reflection) {
-            // Devolver formato vacío consistente con la UI
             return response()->json([
                 'data' => [
                     'user_id' => $user->getId(),
                     'date' => $date,
-                    'morning_text' => null,
-                    'evening_text' => null,
+                    'text' => null,
                 ]
             ], 200);
         }
 
-        return response()->json(['data' => $reflection], 200);
+        return response()->json([
+            'data' => [
+                'id' => $reflection->id,
+                'date' => $reflection->date,
+                'text' => $reflection->text,
+                'time' => $reflection->created_at ? $reflection->created_at->setTimezone($tz)->format('H:i:s') : null,
+            ]
+        ], 200);
+    }
+
+    /**
+     * Devuelve todas las reflexiones del usuario (endpoint explícito para Postman)
+     */
+    public function all(Request $request)
+    {
+        $user = $request->attributes->get('authenticated_user');
+        if (! $user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        $tz = $user->timezone ?? config('app.timezone', 'UTC');
+
+        $all = Reflection::where('user_id', $user->getId())
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function($r) use ($tz) {
+                return [
+                    'id' => $r->id,
+                    'date' => $r->date,
+                    'text' => $r->text,
+                    'time' => $r->created_at ? $r->created_at->setTimezone($tz)->format('H:i:s') : null,
+                ];
+            });
+
+        return response()->json(['data' => $all], 200);
     }
 
     /**
@@ -167,37 +155,19 @@ class DiarioController extends Controller
         if (! $user) {
             return response()->json(['message' => 'No autenticado.'], 401);
         }
-
         $data = $request->validate([
-            'morning_text' => 'nullable|string|max:1000',
-            'evening_text' => 'nullable|string|max:1000',
+            'text' => 'required|string|max:2000',
         ]);
 
-        // Buscar reflexión por id y usuario
         $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
         if (! $reflection) {
             return response()->json(['message' => 'Reflexión no encontrada.'], 404);
         }
 
-        // Si no se envía ningún campo a actualizar, devolver 422
-        if (! array_key_exists('morning_text', $data) && ! array_key_exists('evening_text', $data)) {
-            return response()->json(['message' => 'No hay campos para actualizar. Enviar morning_text o evening_text.'], 422);
-        }
-
-        if (array_key_exists('morning_text', $data)) {
-            $reflection->morning_text = $data['morning_text'];
-        }
-
-        if (array_key_exists('evening_text', $data)) {
-            $reflection->evening_text = $data['evening_text'];
-        }
-
+        $reflection->text = $data['text'];
         $reflection->save();
 
-        return response()->json([
-            'message' => 'Reflexión actualizada correctamente.',
-            'data' => $reflection,
-        ], 200);
+        return response()->json(['message' => 'Reflexión actualizada correctamente.', 'data' => $reflection], 200);
     }
 
     /**
