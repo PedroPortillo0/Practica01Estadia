@@ -122,6 +122,8 @@ Route::prefix('daily-quote')->middleware('jwt.auth')->group(function () {
 Route::prefix('diario')->middleware('jwt.auth')->group(function () {
     // Obtener reflexiones del día (opcional ?date=YYYY-MM-DD)
     Route::get('/', [DiarioController::class, 'show']);
+    // Obtener todas las reflexiones del usuario (útil para Postman): /api/diario/all
+    Route::get('/all', [DiarioController::class, 'all']);
     // Guardar o actualizar (crear) las reflexiones para una fecha dada
     Route::post('/', [DiarioController::class, 'store']);
 
