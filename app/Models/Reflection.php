@@ -12,8 +12,7 @@ class Reflection extends Model
     protected $fillable = [
         'user_id',
         'date',
-        'morning_text',
-        'evening_text',
+        'text',
     ];
 
     /**
