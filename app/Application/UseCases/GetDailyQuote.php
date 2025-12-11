@@ -115,14 +115,19 @@ class GetDailyQuote
                                     ]
                                 );
                                 
-                                // Retornar la frase personalizada
+                                // Retornar la frase personalizada con estructura consistente
                                 return [
                                     'success' => true,
-                                    'data' => array_merge($personalizedResult['data'], [
+                                    'data' => [
                                         'id' => $quoteEntity->getId(),
+                                        'quote' => $personalizedResult['data']['personalized_quote'],
+                                        'author' => $personalizedResult['data']['original_author'],
+                                        'category' => $personalizedResult['data']['original_category'],
+                                        'explanation' => $personalizedResult['data']['explanation'],
                                         'date' => $today,
                                         'day_of_year' => $dayOfYear,
-                                    ])
+                                        'is_personalized' => true
+                                    ]
                                 ];
                             }
                         } catch (Exception $e) {
