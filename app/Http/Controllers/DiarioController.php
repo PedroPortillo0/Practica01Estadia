@@ -30,12 +30,15 @@ class DiarioController extends Controller
         $now = Carbon::now($tz);
         $date = $now->toDateString();
 
-        // Crear una nueva reflexión (siempre crea una nueva entrada)
-        $reflection = Reflection::create([
+        // Guardar o actualizar la reflexión del usuario para la fecha actual
+        $reflection = Reflection::firstOrNew([
             'user_id' => $user->getId(),
             'date' => $date,
-            'text' => $data['text'],
         ]);
+
+        $isNew = !$reflection->exists;
+        $reflection->text = $data['text'];
+        $reflection->save();
 
         // Devolver la hora registrada (created_at) en la zona del usuario
         $time = $reflection->created_at
@@ -43,7 +46,7 @@ class DiarioController extends Controller
             : $now->format('H:i:s');
 
         return response()->json([
-            'message' => 'Reflexión creada correctamente.',
+            'message' => $isNew ? 'Reflexión creada correctamente.' : 'Reflexión actualizada correctamente.',
             'data' => [
                 'id' => $reflection->id,
                 'user_id' => $reflection->user_id,
@@ -51,7 +54,7 @@ class DiarioController extends Controller
                 'text' => $reflection->text,
                 'time' => $time,
             ]
-        ], 201);
+        ], $isNew ? 201 : 200);
     }
 
     /**
