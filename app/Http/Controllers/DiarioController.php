@@ -11,6 +11,9 @@ class DiarioController extends Controller
 {
     /**
      * Guardar o actualizar una sola reflexión para la fecha actual.
+     * - La fecha se calcula automáticamente (no se acepta date desde el cliente).
+     * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
+     * - Se registra la hora en created_at/updated_at.
      * - La fecha se calcula automáticamente (no se acepta `date` desde el cliente).
      * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
      * - Se registra la hora en `created_at`/`updated_at`.
@@ -36,6 +39,7 @@ class DiarioController extends Controller
             'date' => $date,
         ]);
 
+        $isNew = !$reflection->exists;
         $isNew = ! $reflection->exists;
         $reflection->text = $data['text'];
         $reflection->save();
@@ -147,7 +151,7 @@ class DiarioController extends Controller
 
     /**
      * Actualizar una reflexión existente (solo del usuario autenticado).
-     * Acepta `morning_text` y/o `evening_text`. Devuelve 404 si no existe o no pertenece al usuario.
+     * Acepta text. Devuelve 404 si no existe o no pertenece al usuario.
      */
     public function update(Request $request, $id)
     {
@@ -160,6 +164,7 @@ class DiarioController extends Controller
         ]);
 
         $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+
         if (! $reflection) {
             return response()->json(['message' => 'Reflexión no encontrada.'], 404);
         }
@@ -181,6 +186,7 @@ class DiarioController extends Controller
         }
 
         $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+
         if (! $reflection) {
             return response()->json(['message' => 'Reflexión no encontrada.'], 404);
         }

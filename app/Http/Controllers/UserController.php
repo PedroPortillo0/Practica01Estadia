@@ -11,6 +11,7 @@ use App\Application\UseCases\ResetPassword;
 use App\Application\UseCases\GetUserById;
 use App\Application\UseCases\GetAllUsers;
 use App\Application\UseCases\DeleteUser;
+use App\Models\UserQuizResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -249,6 +250,94 @@ class UserController extends Controller
                         'expires_at' => $payload['exp'] ?? null,
                         'issued_at' => $payload['iat'] ?? null
                     ]
+                ]
+            ], 200);
+        }
+
+        /**
+         * Actualizar información del quiz del usuario autenticado
+         * Permite editar: age_range, gender, country, religious_belief
+         */
+        public function updateQuizInfo(Request $request): JsonResponse
+        {
+            $user = $this->getAuthenticatedUser($request);
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autenticado.'
+                ], 401);
+            }
+
+            // Validar que el usuario tenga un quiz completado
+            $quizResponse = UserQuizResponse::where('user_id', $user->getId())->first();
+            
+            if (!$quizResponse) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No has completado el quiz. Completa el quiz primero para poder editar tu información.'
+                ], 404);
+            }
+
+            // Validación de campos opcionales (solo los que se envíen)
+            $validator = Validator::make($request->all(), [
+                'age_range' => 'nullable|string',
+                'gender' => 'nullable|string',
+                'country' => 'nullable|string',
+                'religious_belief' => 'nullable|string',
+            ], [
+                'age_range.string' => 'El rango de edad debe ser un texto válido',
+                'gender.string' => 'El género debe ser un texto válido',
+                'country.string' => 'El país debe ser un texto válido',
+                'religious_belief.string' => 'La creencia religiosa debe ser un texto válido',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Errores de validación',
+                    'errors' => $validator->errors()
+                ], 400);
+            }
+
+            // Actualizar solo los campos que se envíen
+            $updateData = [];
+            
+            if ($request->has('age_range')) {
+                $updateData['age_range'] = $request->input('age_range');
+            }
+            
+            if ($request->has('gender')) {
+                $updateData['gender'] = $request->input('gender');
+            }
+            
+            if ($request->has('country')) {
+                $updateData['country'] = $request->input('country');
+            }
+            
+            if ($request->has('religious_belief')) {
+                $updateData['religious_belief'] = $request->input('religious_belief');
+            }
+
+            // Si no se envía ningún campo para actualizar
+            if (empty($updateData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief'
+                ], 400);
+            }
+
+            // Actualizar el quiz response
+            $quizResponse->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Información actualizada correctamente.',
+                'data' => [
+                    'age_range' => $quizResponse->age_range,
+                    'gender' => $quizResponse->gender,
+                    'country' => $quizResponse->country,
+                    'religious_belief' => $quizResponse->religious_belief,
                 ]
             ], 200);
         }
