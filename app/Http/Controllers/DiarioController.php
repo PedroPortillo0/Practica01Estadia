@@ -14,6 +14,9 @@ class DiarioController extends Controller
      * - La fecha se calcula automáticamente (no se acepta date desde el cliente).
      * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
      * - Se registra la hora en created_at/updated_at.
+     * - La fecha se calcula automáticamente (no se acepta `date` desde el cliente).
+     * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
+     * - Se registra la hora en `created_at`/`updated_at`.
      */
     public function store(Request $request)
     {
@@ -37,6 +40,7 @@ class DiarioController extends Controller
         ]);
 
         $isNew = !$reflection->exists;
+        $isNew = ! $reflection->exists;
         $reflection->text = $data['text'];
         $reflection->save();
 
@@ -155,7 +159,6 @@ class DiarioController extends Controller
         if (! $user) {
             return response()->json(['message' => 'No autenticado.'], 401);
         }
-
         $data = $request->validate([
             'text' => 'required|string|max:2000',
         ]);
