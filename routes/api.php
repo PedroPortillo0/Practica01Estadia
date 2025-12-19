@@ -49,6 +49,9 @@ Route::prefix('users')->middleware('jwt.auth')->group(function () {
     // Información del usuario autenticado
     Route::get('/me', [UserController::class, 'me']);
     
+    // Actualizar información del quiz del usuario autenticado
+    Route::patch('/quiz-info', [UserController::class, 'updateQuizInfo']);
+    
     // Obtener usuarios (requiere autenticación)
     Route::get('/', [UserController::class, 'getAllUsers']);
     Route::get('/{id}', [UserController::class, 'getUser']);
@@ -118,16 +121,19 @@ Route::prefix('daily-quote')->middleware('jwt.auth')->group(function () {
 // ========================================
 // RUTAS DE DIARIO (Reflexiones)
 // ========================================
-// Guardar reflexiones matutina/vespertina. Requiere autenticación JWT.
+// Guardar reflexiones. Requiere autenticación JWT.
 Route::prefix('diario')->middleware('jwt.auth')->group(function () {
-    // Obtener reflexiones del día (opcional ?date=YYYY-MM-DD)
+    // Obtener todas las reflexiones del usuario
+    Route::get('/all', [DiarioController::class, 'all']);
+    // Obtener reflexiones del día (opcional ?all=1 para todas, ?date=YYYY-MM-DD para fecha específica)
     Route::get('/', [DiarioController::class, 'show']);
+    // Guardar o actualizar (crear) la reflexión para la fecha actual
     // Obtener todas las reflexiones del usuario (útil para Postman): /api/diario/all
     Route::get('/all', [DiarioController::class, 'all']);
     // Guardar o actualizar (crear) las reflexiones para una fecha dada
     Route::post('/', [DiarioController::class, 'store']);
 
-    // Actualizar parcialmente una reflexión por id (solo del usuario autenticado)
+    // Actualizar una reflexión por id (solo del usuario autenticado)
     Route::patch('/{id}', [DiarioController::class, 'update']);
 
     // Eliminar una reflexión por id (solo del usuario autenticado)
