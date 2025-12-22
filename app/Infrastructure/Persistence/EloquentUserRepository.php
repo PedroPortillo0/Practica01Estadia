@@ -13,7 +13,7 @@ class EloquentUserRepository implements UserRepositoryInterface
     public function save(User $user): User
     {
         try {
-            // Verificar si el usuario ya existe
+            // Verificar si el usuario ya existe por ID
             $userModel = UserModel::find($user->getId());
             
             if ($userModel) {
@@ -31,21 +31,44 @@ class EloquentUserRepository implements UserRepositoryInterface
                     'is_admin' => $user->isAdmin(),
                 ]);
             } else {
-                // Crear nuevo usuario
-                $userModel = UserModel::create([
-                    'id' => $user->getId(),
-                    'nombre' => $user->getNombre(),
-                    'apellidos' => $user->getApellidos(),
-                    'email' => $user->getEmail(),
-                    'password' => $user->getPassword(),
-                    'email_verificado' => $user->isEmailVerificado(),
-                    'quiz_completed' => $user->isQuizCompleted(),
-                    'google_id' => $user->getGoogleId(),
-                    'avatar' => $user->getAvatar(),
-                    'auth_provider' => $user->getAuthProvider(),
-                    'is_admin' => $user->isAdmin(),
-                    'created_at' => $user->getFechaCreacion()
-                ]);
+                // Verificar si el email ya existe en otro usuario antes de crear
+                $existingEmail = UserModel::where('email', $user->getEmail())->first();
+                if ($existingEmail) {
+                    // Si el email existe en otro usuario, verificar si está verificado
+                    if ($existingEmail->email_verificado) {
+                        throw new Exception('El email ya está registrado y verificado');
+                    }
+                    // Si no está verificado, actualizar ese usuario existente (mantener su ID original)
+                    $userModel = $existingEmail;
+                    $userModel->update([
+                        'nombre' => $user->getNombre(),
+                        'apellidos' => $user->getApellidos(),
+                        'email' => $user->getEmail(),
+                        'password' => $user->getPassword(),
+                        'email_verificado' => $user->isEmailVerificado(),
+                        'quiz_completed' => $user->isQuizCompleted(),
+                        'google_id' => $user->getGoogleId(),
+                        'avatar' => $user->getAvatar(),
+                        'auth_provider' => $user->getAuthProvider(),
+                        'is_admin' => $user->isAdmin(),
+                    ]);
+                } else {
+                    // Crear nuevo usuario
+                    $userModel = UserModel::create([
+                        'id' => $user->getId(),
+                        'nombre' => $user->getNombre(),
+                        'apellidos' => $user->getApellidos(),
+                        'email' => $user->getEmail(),
+                        'password' => $user->getPassword(),
+                        'email_verificado' => $user->isEmailVerificado(),
+                        'quiz_completed' => $user->isQuizCompleted(),
+                        'google_id' => $user->getGoogleId(),
+                        'avatar' => $user->getAvatar(),
+                        'auth_provider' => $user->getAuthProvider(),
+                        'is_admin' => $user->isAdmin(),
+                        'created_at' => $user->getFechaCreacion()
+                    ]);
+                }
             }
 
             // Recargar el modelo desde la base de datos para obtener todos los campos actualizados
@@ -54,7 +77,29 @@ class EloquentUserRepository implements UserRepositoryInterface
             return $this->toDomainEntity($userModel);
 
         } catch (Exception $e) {
-            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+            // Si el error menciona "Duplicate entry" o "email", verificar el estado del email
+            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'email')) {
+                $existingEmail = UserModel::where('email', $user->getEmail())->first();
+                if ($existingEmail && $existingEmail->email_verificado) {
+                    throw new Exception('El email ya está registrado y verificado');
+                }
+                // Si no está verificado, permitir la actualización (no lanzar error)
+                if ($existingEmail && !$existingEmail->email_verificado) {
+                    // Intentar actualizar el usuario existente
+                    $existingEmail->update([
+                        'nombre' => $user->getNombre(),
+                        'apellidos' => $user->getApellidos(),
+                        'password' => $user->getPassword(),
+                        'email_verificado' => $user->isEmailVerificado(),
+                        'quiz_completed' => $user->isQuizCompleted(),
+                        'google_id' => $user->getGoogleId(),
+                        'avatar' => $user->getAvatar(),
+                        'auth_provider' => $user->getAuthProvider(),
+                        'is_admin' => $user->isAdmin(),
+                    ]);
+                    $existingEmail->refresh();
+                    return $this->toDomainEntity($existingEmail);
+                }
                 throw new Exception('El email ya está registrado');
             }
             throw new Exception('Error al guardar usuario: ' . $e->getMessage());
