@@ -6,6 +6,8 @@ use App\Domain\Ports\DailyQuoteRepositoryInterface;
 use App\Application\UseCases\GeneratePersonalizedQuoteExplanation;
 use App\Domain\Ports\UserRepositoryInterface;
 use App\Models\UserQuizResponse;
+use App\Models\UserPersonalizedQuote;
+use Carbon\Carbon;
 use Exception;
 
 class GetDailyQuote
@@ -57,7 +59,38 @@ class GetDailyQuote
                 $user = $this->userRepository->findById($userId);
                 
                 if ($user && $user->isQuizCompleted()) {
-                    // Obtener datos del quiz del usuario
+                    $today = Carbon::today()->toDateString();
+                    
+                    // Verificar si ya existe una frase personalizada para hoy
+                    $existingPersonalizedQuote = UserPersonalizedQuote::where('user_id', $userId)
+                        ->where('date', $today)
+                        ->first();
+                    
+                    if ($existingPersonalizedQuote) {
+                        // Si ya existe, devolverla sin generar nueva (ahorra tokens)
+                        $responseData = [
+                            'id' => $existingPersonalizedQuote->original_quote_id ?? $quoteEntity->getId(),
+                            'quote' => $existingPersonalizedQuote->personalized_quote,
+                            'author' => $existingPersonalizedQuote->original_author ?? $quoteEntity->getAuthor(),
+                            'category' => $existingPersonalizedQuote->original_category ?? $quoteEntity->getCategory(),
+                            'explanation' => $existingPersonalizedQuote->explanation,
+                            'date' => $existingPersonalizedQuote->date->toDateString(),
+                            'day_of_year' => $existingPersonalizedQuote->day_of_year,
+                            'is_personalized' => true
+                        ];
+                        
+                        // Si se pide detalle, incluir información adicional
+                        if ($includeDetail) {
+                            $responseData['is_active'] = $quoteEntity->isActive();
+                        }
+                        
+                        return [
+                            'success' => true,
+                            'data' => $responseData
+                        ];
+                    }
+                    
+                    // Si no existe, generar una nueva con IA
                     $userQuiz = UserQuizResponse::where('user_id', $userId)->first();
                     
                     if ($userQuiz) {
@@ -66,14 +99,35 @@ class GetDailyQuote
                             $personalizedResult = $this->personalizeQuote->execute($dailyQuoteData, $userQuiz);
                             
                             if ($personalizedResult['success']) {
-                                // Retornar solo la frase personalizada (no la original)
+                                // Guardar la frase personalizada en la base de datos
+                                UserPersonalizedQuote::updateOrCreate(
+                                    [
+                                        'user_id' => $userId,
+                                        'date' => $today,
+                                    ],
+                                    [
+                                        'personalized_quote' => $personalizedResult['data']['personalized_quote'],
+                                        'explanation' => $personalizedResult['data']['explanation'],
+                                        'original_quote_id' => $quoteEntity->getId(),
+                                        'day_of_year' => $dayOfYear,
+                                        'original_author' => $quoteEntity->getAuthor(),
+                                        'original_category' => $quoteEntity->getCategory(),
+                                    ]
+                                );
+                                
+                                // Retornar la frase personalizada con estructura consistente
                                 return [
                                     'success' => true,
-                                    'data' => array_merge($personalizedResult['data'], [
+                                    'data' => [
                                         'id' => $quoteEntity->getId(),
-                                        'date' => date('Y-m-d'),
+                                        'quote' => $personalizedResult['data']['personalized_quote'],
+                                        'author' => $personalizedResult['data']['original_author'],
+                                        'category' => $personalizedResult['data']['original_category'],
+                                        'explanation' => $personalizedResult['data']['explanation'],
+                                        'date' => $today,
                                         'day_of_year' => $dayOfYear,
-                                    ])
+                                        'is_personalized' => true
+                                    ]
                                 ];
                             }
                         } catch (Exception $e) {

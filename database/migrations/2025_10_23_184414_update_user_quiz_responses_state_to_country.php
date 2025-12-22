@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,10 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_quiz_responses', function (Blueprint $table) {
-            // Renombrar la columna state a country
-            $table->renameColumn('state', 'country');
-        });
+        // Renombrar la columna state a country usando SQL directo
+        // Esto evita la necesidad de Doctrine DBAL
+        if (Schema::hasColumn('user_quiz_responses', 'state')) {
+            DB::statement('ALTER TABLE user_quiz_responses CHANGE state country VARCHAR(255) NULL');
+        }
     }
 
     /**
@@ -22,9 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_quiz_responses', function (Blueprint $table) {
-            // Revertir el cambio: country a state
-            $table->renameColumn('country', 'state');
-        });
+        // Revertir el cambio: country a state
+        if (Schema::hasColumn('user_quiz_responses', 'country')) {
+            DB::statement('ALTER TABLE user_quiz_responses CHANGE country state VARCHAR(255) NULL');
+        }
     }
 };

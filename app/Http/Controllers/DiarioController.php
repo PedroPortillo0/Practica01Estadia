@@ -30,6 +30,7 @@ class DiarioController extends Controller
             'date' => $date,
         ]);
 
+        $isNew = !$reflection->exists;
         $isNew = ! $reflection->exists;
         $reflection->text = $data['text'];
         $reflection->save();
@@ -137,6 +138,7 @@ class DiarioController extends Controller
         ]);
 
         $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+
         if (! $reflection) {
             return response()->json(['message' => 'Reflexión no encontrada.'], 404);
         }
@@ -155,6 +157,7 @@ class DiarioController extends Controller
         }
 
         $reflection = Reflection::where('id', $id)->where('user_id', $user->getId())->first();
+
         if (! $reflection) {
             return response()->json(['message' => 'Reflexión no encontrada.'], 404);
         }
