@@ -30,7 +30,6 @@ class DiarioController extends Controller
             'date' => $date,
         ]);
 
-        $isNew = !$reflection->exists;
         $isNew = ! $reflection->exists;
         $reflection->text = $data['text'];
         $reflection->save();
@@ -146,7 +145,20 @@ class DiarioController extends Controller
         $reflection->text = $data['text'];
         $reflection->save();
 
-        return response()->json(['message' => 'Reflexión actualizada correctamente.', 'data' => $reflection], 200);
+        $tz = $user->timezone ?? config('app.timezone', 'UTC');
+
+        return response()->json([
+            'message' => 'Reflexión actualizada correctamente.',
+            'data' => [
+                'id' => $reflection->id,
+                'user_id' => $reflection->user_id,
+                'date' => $reflection->date,
+                'text' => $reflection->text,
+                'time' => $reflection->updated_at ? $reflection->updated_at->setTimezone($tz)->format('H:i:s') : null,
+                'created_at' => $reflection->created_at ? $reflection->created_at->setTimezone($tz)->format('Y-m-d H:i:s') : null,
+                'updated_at' => $reflection->updated_at ? $reflection->updated_at->setTimezone($tz)->format('Y-m-d H:i:s') : null,
+            ]
+        ], 200);
     }
 
     public function destroy(Request $request, $id)
