@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users_hexagonal', function (Blueprint $table) {
+        Schema::create('users', function (Blueprint $table) {
             $table->string('id')->primary(); // UUID como primary key
             $table->string('nombre');
             $table->string('apellido_paterno');
@@ -29,6 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users_hexagonal');
+        Schema::dropIfExists('users');
     }
 };
+

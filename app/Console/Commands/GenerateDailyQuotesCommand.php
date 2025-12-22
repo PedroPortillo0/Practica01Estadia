@@ -13,7 +13,7 @@ class GenerateDailyQuotesCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'ai:generate-quotes {--year= : Año para generar las frases (por defecto año actual)}';
+    protected $signature = 'ai:generate-quotes {--year= : Año para generar las frases (por defecto año actual)} {--batch-size=10 : Tamaño del lote para generar frases (por defecto 10)}';
 
     /**
      * The console command description.
@@ -32,6 +32,12 @@ class GenerateDailyQuotesCommand extends Command
 
         try {
             $year = $this->option('year') ? (int) $this->option('year') : null;
+            $batchSize = (int) $this->option('batch-size');
+
+            if ($batchSize < 1 || $batchSize > 50) {
+                $this->warn('El tamaño del lote debe estar entre 1 y 50. Usando 10 por defecto.');
+                $batchSize = 10;
+            }
 
             if ($year !== null) {
                 $this->info("📅 Generando frases para el año: {$year}");
@@ -39,12 +45,13 @@ class GenerateDailyQuotesCommand extends Command
                 $this->info("📅 Generando frases para el año actual");
             }
 
+            $this->info("📦 Tamaño del lote: {$batchSize} frases por petición");
             $this->newLine();
             $this->info('⏳ Esto puede tomar varios minutos...');
             $this->newLine();
 
             // Ejecutar el caso de uso
-            $result = $generateQuotesUseCase->execute($year);
+            $result = $generateQuotesUseCase->execute($year, $batchSize);
 
             // Mostrar resultados
             $this->newLine();
@@ -56,6 +63,7 @@ class GenerateDailyQuotesCommand extends Command
                     ['Total de días', $result['total_days']],
                     ['Frases guardadas', $result['saved']],
                     ['Errores', $result['errors']],
+                    ['Omitidas (ya existían)', $result['skipped'] ?? 0],
                     ['Año', $result['year']],
                     ['Año bisiesto', $result['is_leap_year'] ? 'Sí' : 'No'],
                 ]
