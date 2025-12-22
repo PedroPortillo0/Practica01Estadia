@@ -20,6 +20,9 @@ return new class extends Migration
             $table->timestamp('expires_at'); // Cuándo expira
             $table->timestamps();
             
+            // Foreign key a users
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            
             // Índices para búsquedas rápidas
             $table->index(['user_id', 'code', 'used']);
             $table->index('expires_at');
