@@ -9,7 +9,6 @@ use Carbon\Carbon;
 
 class DiarioController extends Controller
 {
-
     public function store(Request $request)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -31,7 +30,6 @@ class DiarioController extends Controller
             'date' => $date,
         ]);
 
-        $isNew = !$reflection->exists;
         $isNew = ! $reflection->exists;
         $reflection->text = $data['text'];
         $reflection->save();
@@ -52,7 +50,6 @@ class DiarioController extends Controller
             ]
         ], $isNew ? 201 : 200);
     }
-
 
     public function show(Request $request)
     {
@@ -105,9 +102,6 @@ class DiarioController extends Controller
         ], 200);
     }
 
-    /**
-     * Devuelve todas las reflexiones del usuario (endpoint explícito para Postman)
-     */
     public function all(Request $request)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -132,7 +126,6 @@ class DiarioController extends Controller
         return response()->json(['data' => $all], 200);
     }
 
- 
     public function update(Request $request, $id)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -168,9 +161,6 @@ class DiarioController extends Controller
         ], 200);
     }
 
-    /**
-     * Eliminar una reflexión del usuario autenticado.
-     */
     public function destroy(Request $request, $id)
     {
         $user = $request->attributes->get('authenticated_user');
