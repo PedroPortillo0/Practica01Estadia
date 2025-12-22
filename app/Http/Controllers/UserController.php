@@ -259,7 +259,7 @@ class UserController extends Controller
          * Permite editar todos los campos del quiz:
          * - age_range, gender, country, religious_belief
          * - spiritual_practice_level, spiritual_practice_frequency
-         * - daily_challenges, stoic_paths
+         * - daily_challenges, stoic_paths, stoic_level
          */
         public function updateQuizInfo(Request $request): JsonResponse
         {
@@ -294,6 +294,7 @@ class UserController extends Controller
                 'daily_challenges.*' => 'string',
                 'stoic_paths' => 'nullable|array|min:2',
                 'stoic_paths.*' => 'string',
+                'stoic_level' => 'nullable|string|in:principiante,intermedio,avanzado',
             ], [
                 'age_range.string' => 'El rango de edad debe ser un texto válido',
                 'gender.string' => 'El género debe ser un texto válido',
@@ -307,6 +308,8 @@ class UserController extends Controller
                 'stoic_paths.array' => 'Los caminos estoicos deben ser un array',
                 'stoic_paths.min' => 'Debes seleccionar al menos 2 caminos estoicos',
                 'stoic_paths.*.string' => 'Cada camino estoico debe ser un texto válido',
+                'stoic_level.string' => 'El nivel estoico debe ser un texto válido',
+                'stoic_level.in' => 'El nivel estoico debe ser uno de: principiante, intermedio, avanzado',
             ]);
 
             if ($validator->fails()) {
@@ -352,11 +355,15 @@ class UserController extends Controller
                 $updateData['stoic_paths'] = $request->input('stoic_paths');
             }
 
+            if ($request->has('stoic_level')) {
+                $updateData['stoic_level'] = $request->input('stoic_level');
+            }
+
             // Si no se envía ningún campo para actualizar
             if (empty($updateData)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief, spiritual_practice_level, spiritual_practice_frequency, daily_challenges, stoic_paths'
+                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief, spiritual_practice_level, spiritual_practice_frequency, daily_challenges, stoic_paths, stoic_level'
                 ], 400);
             }
 
@@ -378,6 +385,7 @@ class UserController extends Controller
                     'spiritual_practice_frequency' => $quizResponse->spiritual_practice_frequency,
                     'daily_challenges' => $quizResponse->daily_challenges,
                     'stoic_paths' => $quizResponse->stoic_paths,
+                    'stoic_level' => $quizResponse->stoic_level,
                 ]
             ], 200);
         }
