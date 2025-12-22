@@ -9,15 +9,6 @@ use Carbon\Carbon;
 
 class DiarioController extends Controller
 {
-    /**
-     * Guardar o actualizar una sola reflexión para la fecha actual.
-     * - La fecha se calcula automáticamente (no se acepta date desde el cliente).
-     * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
-     * - Se registra la hora en created_at/updated_at.
-     * - La fecha se calcula automáticamente (no se acepta `date` desde el cliente).
-     * - No hay restricción horaria: el usuario puede escribir a cualquier hora.
-     * - Se registra la hora en `created_at`/`updated_at`.
-     */
     public function store(Request $request)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -61,16 +52,6 @@ class DiarioController extends Controller
         ], $isNew ? 201 : 200);
     }
 
-    /**
-     * Obtener las reflexiones del día para el usuario autenticado.
-     * Si se proporciona ?date=YYYY-MM-DD se usa esa fecha; de lo contrario se usa la fecha actual
-     * en la zona horaria del usuario (si está disponible) o UTC.
-     */
-    /**
-     * Mostrar reflexiones:
-     * - Si ?all=1 → devuelve todas las reflexiones del usuario
-     * - Si no → devuelve la reflexión del día actual (fecha automática)
-     */
     public function show(Request $request)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -122,9 +103,6 @@ class DiarioController extends Controller
         ], 200);
     }
 
-    /**
-     * Devuelve todas las reflexiones del usuario (endpoint explícito para Postman)
-     */
     public function all(Request $request)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -149,10 +127,6 @@ class DiarioController extends Controller
         return response()->json(['data' => $all], 200);
     }
 
-    /**
-     * Actualizar una reflexión existente (solo del usuario autenticado).
-     * Acepta text. Devuelve 404 si no existe o no pertenece al usuario.
-     */
     public function update(Request $request, $id)
     {
         $user = $request->attributes->get('authenticated_user');
@@ -175,9 +149,6 @@ class DiarioController extends Controller
         return response()->json(['message' => 'Reflexión actualizada correctamente.', 'data' => $reflection], 200);
     }
 
-    /**
-     * Eliminar una reflexión del usuario autenticado.
-     */
     public function destroy(Request $request, $id)
     {
         $user = $request->attributes->get('authenticated_user');
