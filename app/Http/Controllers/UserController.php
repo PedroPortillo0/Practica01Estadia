@@ -256,7 +256,10 @@ class UserController extends Controller
 
         /**
          * Actualizar información del quiz del usuario autenticado
-         * Permite editar: age_range, gender, country, religious_belief, stoic_level
+         * Permite editar todos los campos del quiz:
+         * - age_range, gender, country, religious_belief
+         * - spiritual_practice_level, spiritual_practice_frequency
+         * - daily_challenges, stoic_paths, stoic_level
          */
         public function updateQuizInfo(Request $request): JsonResponse
         {
@@ -285,12 +288,26 @@ class UserController extends Controller
                 'gender' => 'nullable|string',
                 'country' => 'nullable|string',
                 'religious_belief' => 'nullable|string',
+                'spiritual_practice_level' => 'nullable|string',
+                'spiritual_practice_frequency' => 'nullable|string',
+                'daily_challenges' => 'nullable|array|min:2',
+                'daily_challenges.*' => 'string',
+                'stoic_paths' => 'nullable|array|min:2',
+                'stoic_paths.*' => 'string',
                 'stoic_level' => 'nullable|string|in:principiante,intermedio,avanzado',
             ], [
                 'age_range.string' => 'El rango de edad debe ser un texto válido',
                 'gender.string' => 'El género debe ser un texto válido',
                 'country.string' => 'El país debe ser un texto válido',
                 'religious_belief.string' => 'La creencia religiosa debe ser un texto válido',
+                'spiritual_practice_level.string' => 'El nivel de práctica espiritual debe ser un texto válido',
+                'spiritual_practice_frequency.string' => 'La frecuencia de práctica espiritual debe ser un texto válido',
+                'daily_challenges.array' => 'Los desafíos diarios deben ser un array',
+                'daily_challenges.min' => 'Debes seleccionar al menos 2 desafíos diarios',
+                'daily_challenges.*.string' => 'Cada desafío diario debe ser un texto válido',
+                'stoic_paths.array' => 'Los caminos estoicos deben ser un array',
+                'stoic_paths.min' => 'Debes seleccionar al menos 2 caminos estoicos',
+                'stoic_paths.*.string' => 'Cada camino estoico debe ser un texto válido',
                 'stoic_level.string' => 'El nivel estoico debe ser un texto válido',
                 'stoic_level.in' => 'El nivel estoico debe ser uno de: principiante, intermedio, avanzado',
             ]);
@@ -322,6 +339,22 @@ class UserController extends Controller
                 $updateData['religious_belief'] = $request->input('religious_belief');
             }
 
+            if ($request->has('spiritual_practice_level')) {
+                $updateData['spiritual_practice_level'] = $request->input('spiritual_practice_level');
+            }
+
+            if ($request->has('spiritual_practice_frequency')) {
+                $updateData['spiritual_practice_frequency'] = $request->input('spiritual_practice_frequency');
+            }
+
+            if ($request->has('daily_challenges')) {
+                $updateData['daily_challenges'] = $request->input('daily_challenges');
+            }
+
+            if ($request->has('stoic_paths')) {
+                $updateData['stoic_paths'] = $request->input('stoic_paths');
+            }
+
             if ($request->has('stoic_level')) {
                 $updateData['stoic_level'] = $request->input('stoic_level');
             }
@@ -330,7 +363,7 @@ class UserController extends Controller
             if (empty($updateData)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief, stoic_level'
+                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief, spiritual_practice_level, spiritual_practice_frequency, daily_challenges, stoic_paths, stoic_level'
                 ], 400);
             }
 
@@ -342,12 +375,16 @@ class UserController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Información actualizada correctamente.',
+                'message' => 'Información del quiz actualizada correctamente.',
                 'data' => [
                     'age_range' => $quizResponse->age_range,
                     'gender' => $quizResponse->gender,
                     'country' => $quizResponse->country,
                     'religious_belief' => $quizResponse->religious_belief,
+                    'spiritual_practice_level' => $quizResponse->spiritual_practice_level,
+                    'spiritual_practice_frequency' => $quizResponse->spiritual_practice_frequency,
+                    'daily_challenges' => $quizResponse->daily_challenges,
+                    'stoic_paths' => $quizResponse->stoic_paths,
                     'stoic_level' => $quizResponse->stoic_level,
                 ]
             ], 200);
