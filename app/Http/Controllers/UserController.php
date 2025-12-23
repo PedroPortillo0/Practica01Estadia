@@ -256,7 +256,7 @@ class UserController extends Controller
 
         /**
          * Actualizar información del quiz del usuario autenticado
-         * Permite editar: age_range, gender, country, religious_belief
+         * Permite editar: age_range, gender, country, religious_belief, stoic_level
          */
         public function updateQuizInfo(Request $request): JsonResponse
         {
@@ -285,11 +285,14 @@ class UserController extends Controller
                 'gender' => 'nullable|string',
                 'country' => 'nullable|string',
                 'religious_belief' => 'nullable|string',
+                'stoic_level' => 'nullable|string|in:principiante,intermedio,avanzado',
             ], [
                 'age_range.string' => 'El rango de edad debe ser un texto válido',
                 'gender.string' => 'El género debe ser un texto válido',
                 'country.string' => 'El país debe ser un texto válido',
                 'religious_belief.string' => 'La creencia religiosa debe ser un texto válido',
+                'stoic_level.string' => 'El nivel estoico debe ser un texto válido',
+                'stoic_level.in' => 'El nivel estoico debe ser uno de: principiante, intermedio, avanzado',
             ]);
 
             if ($validator->fails()) {
@@ -319,16 +322,23 @@ class UserController extends Controller
                 $updateData['religious_belief'] = $request->input('religious_belief');
             }
 
+            if ($request->has('stoic_level')) {
+                $updateData['stoic_level'] = $request->input('stoic_level');
+            }
+
             // Si no se envía ningún campo para actualizar
             if (empty($updateData)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief'
+                    'message' => 'No hay campos para actualizar. Envía al menos uno de los siguientes: age_range, gender, country, religious_belief, stoic_level'
                 ], 400);
             }
 
             // Actualizar el quiz response
             $quizResponse->update($updateData);
+            
+            // Recargar el modelo para obtener los valores actualizados
+            $quizResponse->refresh();
 
             return response()->json([
                 'success' => true,
@@ -338,6 +348,7 @@ class UserController extends Controller
                     'gender' => $quizResponse->gender,
                     'country' => $quizResponse->country,
                     'religious_belief' => $quizResponse->religious_belief,
+                    'stoic_level' => $quizResponse->stoic_level,
                 ]
             ], 200);
         }

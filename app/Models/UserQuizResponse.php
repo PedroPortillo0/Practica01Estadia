@@ -17,6 +17,7 @@ class UserQuizResponse extends Model
         'spiritual_practice_frequency',
         'daily_challenges',
         'stoic_paths',
+        'stoic_level',
         'completed_at'
     ];
 
